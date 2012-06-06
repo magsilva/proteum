@@ -1,0 +1,10 @@
+# Call correct C preprocessor
+
+# For SUNOS%
+#gcc -E -P  $1 -o $2 $3 $4 $5 $6 $7 
+
+# For SUNOS4
+#/usr/ccs/lib/cpp -P $1 $2 $3 $4 $5 $6 $7
+
+# For Linux
+/usr/bin/gcc -ansi -fno-builtin -imacros $PROTEUMIMHOME/linux.h -E -P  $1 -o $2 $3 $4 $5 $6 $7 $8

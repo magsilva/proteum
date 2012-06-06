@@ -1,0 +1,214 @@
+
+# proteumIM --
+# User interface to ProteumIM Tool.
+# author: Elisa Yumi Nakagawa
+# date/hour: 96/02/21  07:45:00
+# last update: 96/07/02, 96/09/25
+#
+# @(#) proteumIM v.1.1.2
+
+set auto_noexec anything
+
+set PROTEUMHOME       $env(PROTEUMIMHOME)
+set PROTEUMINTERFHOME $PROTEUMHOME/interface
+
+set demo 0
+
+if { $argc > 0 } {
+     set demo $argv
+}
+
+set FIXEDSIZE	0
+
+ 
+# Procedures files 
+
+source $PROTEUMINTERFHOME/iglobal.tcl
+source $PROTEUMINTERFHOME/iprogram.tcl   
+source $PROTEUMINTERFHOME/itcase.tcl
+source $PROTEUMINTERFHOME/imuta.tcl
+source $PROTEUMINTERFHOME/ireports.tcl
+source $PROTEUMINTERFHOME/iprops.tcl
+source $PROTEUMINTERFHOME/istatus.tcl
+source $PROTEUMINTERFHOME/inter.tcl
+source $PROTEUMINTERFHOME/igeral.tcl
+source $PROTEUMINTERFHOME/geral.tcl
+
+#------------------------------------------------------------------------------#
+#    Principal Window                               
+#------------------------------------------------------------------------------#
+
+set w .proteum
+eval destroy [winfo child .]
+wm title . $VERSION
+wm iconname . "PROTEUM"
+wm geometry . +1+1
+wm minsize  . 650 450
+
+if { $FIXEDSIZE }  {
+   wm maxsize  . 650 450
+   wm geometry . 650x450
+}
+
+
+#set proteuico [image create bitmap -file $PROTEUMINTERFHOME/proteum.bmp]
+#wm iconbitmap . $proteuico
+wm iconbitmap . @$PROTEUMINTERFHOME/proteum.bmp
+
+#------------------------------------------------------------------------------#
+#   Create menu bar and add menus                            
+#------------------------------------------------------------------------------#
+
+
+frame $w -relief raised -bd 2
+pack $w -side top -fill x
+
+
+#------------------------------ Menu Program Test -----------------------------#
+
+menubutton $w.ptest -width 15 -text "ProgramTest" -menu $w.ptest.m \
+      -underline 0 
+pack $w.ptest -side left
+
+menu $w.ptest.m -tearoff 0
+
+      $w.ptest.m add command -label "Load" \
+            -command "Load_Window $w.ptest.m.dlg"
+
+      $w.ptest.m add command -label "New"  \
+            -command "New_Window $w.ptest.m.dlg"
+
+
+#------------------------------ Menu Test Case --------------------------------#
+
+menubutton $w.tcase -width 12 -text "TestCase" -menu $w.tcase.m \
+      -underline 0
+pack $w.tcase -side left  
+
+menu $w.tcase.m -tearoff 0
+
+      $w.tcase.m add command -label "Add" \
+            -command "Tcase_Add_Window $w.tcase.m.dlg" 
+
+      $w.tcase.m add command -label "View" \
+            -command "Tcase_View_Window $w.tcase.m.dlg"
+
+      $w.tcase.m add command -label "Delete" \
+            -command "Tcase_Delete_Window $w.tcase.m.dlg" 
+
+      $w.tcase.m add command -label "Effective" \
+            -command "Tcase_Effective_Window $w.tcase.m.dlg" 
+
+      $w.tcase.m add cascade -label "Import" \
+            -menu $w.tcase.m.import
+
+      menu $w.tcase.m.import -tearoff 0
+            $w.tcase.m.import add command -label "Proteum" \
+                  -command "Tcase_Imp_Proteum_Window $w.tcase.m.dlg" 
+
+            $w.tcase.m.import add command -label "POKE-TOOL" \
+                  -command "Tcase_Imp_Poketool_Window $w.tcase.m.dlg"
+
+            $w.tcase.m.import add command -label "ASCII" \
+                  -command "Tcase_Imp_Ascii_Window $w.tcase.m.dlg"
+
+      $w.tcase.m add command -label "Minimize" \
+            -command "Tcase_Minimize_Window $w.tcase.m.dlg"
+             
+
+
+#-------------------------------- Menu Mutants --------------------------------#
+
+menubutton $w.muta -width 11 -text "Mutants" -menu $w.muta.m \
+      -underline 0
+pack $w.muta -side left 
+ 
+menu $w.muta.m -tearoff 0
+
+      $w.muta.m add command -label "Generate Unit" \
+            -command "Mutants_Generate_Window2 $w.muta.m.dlg" 
+
+      $w.muta.m add command -label "Generate Interface" \
+            -command "Mutants_Generate_Window $w.muta.m.dlg" 
+
+      $w.muta.m add command -label "View" \
+            -command "Mutants_View_Window $w.muta.m.dlg"
+
+      $w.muta.m add command -label "Equivalents" \
+            -command "Mutants_Equivalents $w.muta.m.dlg" 
+
+      $w.muta.m add command -label "Execute" \
+            -command "Mutants_Execute_Window $w.muta.m.dlg" 
+
+      $w.muta.m add command -label "Execute Dual" \
+            -command "Mutants_DualExecute_Window $w.muta.m.dlg" 
+
+      $w.muta.m add command -label "Select Unit" \
+            -command "Mutants_Select_Window2 $w.muta.m.dlg"
+
+      $w.muta.m add command -label "Select Interface" \
+            -command "Mutants_Select_Window $w.muta.m.dlg"
+
+#      menu $w.muta.m.select -tearoff 0
+#            $w.muta.m.select add command -label "by Operator" \
+#                  -command "Mutants_Select_Window $w.muta.m.dlg"
+ 
+#            $w.muta.m.select add command -label "by Block" \
+#                  -command "Mutants_Select_Block_Window $w.muta.m.dlg"
+
+
+
+#-------------------------------- Menu Reports --------------------------------#
+
+menubutton $w.report -width 11 -text "Reports" -menu $w.report.m \
+      -underline 0
+pack $w.report -side left 
+
+menu $w.report.m -tearoff 0
+
+      $w.report.m add command -label "Test Case" \
+             -command "Report_Tcase_Window $w.report.m.dlg"
+
+
+#----------------------------- Menu Properties --------------------------------#
+
+button $w.props -text "Properties" -relief flat -font $f1 \
+       -underline 2 -command "Props_Window $w.props.dlg"
+pack $w.props -side left 
+
+
+#-------------------------------- Menu Status ---------------------------------#
+
+button $w.status -text "Status" -relief flat -font $f1 \
+       -underline 0 -command "Status_Window $w.status.dlg"
+pack $w.status -side left 
+
+
+#-------------------------------- Option Quit ---------------------------------#
+
+button $w.quit -text "Quit" -relief flat -font $f1 \
+       -underline 0 -command "destroy ."
+pack $w.quit -side left
+
+frame .fp
+pack  .fp -side top -fill x
+
+#frame $w.fp -bg white -height 414
+#pack $w.fp
+text .fp.comand -yscrollcommand ".fp.yscroll set" \
+                           -height 30 -bg white \
+                           -cursor top_left_arrow -font $FIXEDFONT
+scrollbar .fp.yscroll -command ".fp.comand yview"
+pack      .fp.yscroll -side right -fill y
+pack .fp.comand -fill both
+
+
+global comandwindow
+
+set comandwindow .fp.comand
+
+# Disables menubuttons that must not be acessed if none test session is open 
+$w.tcase  configure -state disabled
+$w.muta   configure -state disabled
+$w.report configure -state disabled
+$w.status configure -state disabled

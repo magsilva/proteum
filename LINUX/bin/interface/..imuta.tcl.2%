@@ -1,0 +1,1435 @@
+#------------------------------------------------------------------------------#
+#   IMUTA.TCL
+#   Procedures related with MUTANTS options.
+#   author: Elisa Yumi Nakagawa
+#   date: 02/27/96
+#   last update: 05/28/96, 09/25/96, 11/13/96, 11/20/96, 11/25/96
+#------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_GENERATE_WINDOW {}
+#
+#   date: 11/13/96
+#   last update: 11/13/96
+#------------------------------------------------------------------------------#
+
+proc Mutants_Generate_Window {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Generate Mutants/Connections"
+   wm iconname $w "Connections"
+   wm geometry $w +10+65
+   wm minsize  $w 450 350
+   if { $FIXEDSIZE } {
+   wm maxsize  $w 450 350
+   wm geometry $w 450x350
+   } 
+
+   global connection
+   global MAXCONNECTIONS
+   global in
+
+   set in(con) ""
+
+   frame  $w.f1    
+   pack   $w.f1 -expand true -fill x -padx 10
+   label  $w.f1.l -text "Input Connection:"
+   pack   $w.f1.l -anchor w 
+   entry  $w.f1.e -width 70 -textvariable in(con)  
+   pack   $w.f1.e -anchor w
+   label  $w.f1.1 -text "Calling Function"
+   pack   $w.f1.1 -side left -fill y
+   label  $w.f1.2 -text "Called Function"
+   pack   $w.f1.2 -fill y
+
+   List_Select $w.f {-text $test(func)}
+   pack $w.f -expand true -fill both
+   Show_Connection $w.f GENERATE
+ 
+
+
+ #  frame  $w.f2 -bd 0  
+ #  label  $w.f2.l -text "Calling Function"
+ #  pack   $w.f2.l -side top
+ #  text   $w.f2.t -yscrollcommand "$w.f2.s set" -width 40 \
+ #                 -height 20 -bg white -cursor top_left_arrow -state disabled
+ #  scrollbar $w.f2.s -command "$w.f2.t yview" 
+ #  pack $w.f2.s -side right -fill y 
+ #  pack $w.f2.t -expand true -fill both
+ #  Show_Connection $w.f2.t GENERATE
+
+
+ #  frame  $w.f21
+ #  pack   $w.f2 $w.f21 -side left -padx 5 
+ #  label  $w.f21.l -text "Called Function"
+ #  pack   $w.f21.l -side top
+ #  text   $w.f21.t -yscrollcommand "$w.f21.s set" -width 40 \
+ #                  -height 20 -bg white -cursor top_left_arrow -state disabled 
+ #  scrollbar $w.f21.s -command "$w.f21.t yview"
+ #  pack $w.f21.s -side right -fill y
+ #  pack $w.f21.t -expand true -fill both
+ #  Show_Connection $w.f21.t GENERATE 
+
+  
+
+#   frame  $w.f3    
+#   pack   $w.f3  
+#   checkbutton $w.f3.c1 -text "All Connections" -variable ALL_CONNEC_GEN \
+#                        -selectcolor green -cursor hand2
+#   checkbutton $w.f3.c2 -text "Only Source File Functions" -variable \
+#                        ONLY_SRC_FUNC -selectcolor green -cursor hand2
+#   pack $w.f3.c1 $w.f3.c2 -side top -anchor w -expand true
+#   $w.f3.c1 select
+#   $w.f3.c2 select
+
+
+   frame  $w.f4  
+   pack   $w.f4 
+ 
+   button $w.f4.add -width 5 -text Add -command {
+      if {[Add_Connection]} {
+         Show_Connection .proteum.muta.m.dlg.f2.t GENERATE
+      }
+   }
+
+   button $w.f4.delete -width 5 -text Delete -command {
+      Delete_Connection
+      Show_Connection .proteum.muta.m.dlg.f2.t GENERATE
+   }
+
+   button $w.f4.continue  -width 5 -text Continue -command {
+      destroy .proteum.muta.m.dlg
+      Mutants_Generate .proteum.muta.m.dlg
+   }
+
+   button $w.f4.cancel -width 5 -text Cancel -command "
+      destroy $w
+      set confirm 0";       # Variable for user not interact with other window
+   
+   pack   $w.f4.add $w.f4.delete $w.f4.continue $w.f4.cancel -side left -pady 10
+
+   wm protocol $w WM_DELETE_WINDOW {
+     set confirm 0
+      destroy .proteum.muta.m.dlg
+   }
+   bind $w <Any-Motion> {focus %W}
+   grab $w 
+   tkwait variable confirm
+   grab release $w
+}
+
+
+#------------------------------------------------------------------------------#
+# LIST_SELECT {}
+#
+# date: 18/01/99
+# last update:
+#------------------------------------------------------------------------------#
+
+
+ proc List_Select {parent values} {
+    # Create two lists side by side
+    frame $parent
+    set choices [Scrolled_Listbox $parent.choices \
+        -width 20 -height 10 -bg white]
+    set picked [Scrolled_Listbox $parent.picked \
+        -width 20 -height 10 -bg white]
+    pack $parent.choices $parent.picked -side left \
+        -expand true -fill both
+    
+    # Selecting in choices moves items into picked
+    bind $choices <ButtonRelease-1> \
+       [list ListTransferSel %W $picked]
+    
+    # Selecting in picked deletes items
+    bind $picked <ButtonRelease-1> \
+       {ListDeleteSel %W %y}  
+
+    # Insert all the choices
+    foreach x $values {
+       $choices insert end $x
+    }
+ }
+
+
+    
+proc ListTransferSel {src dst} {
+   foreach i [$src curselection] {
+      $dst insert end [$src get $i]
+   }
+}    
+
+proc ListDeleteSel {w y} {  
+   foreach i [lsort -integer -decreasing [$w curselection]] {
+      $w delete $i 
+   }
+}
+
+proc List_SelectValues {parent} {
+   set picked $parent.picked.list
+   set result {}
+   foreach i [$w curselection] {
+      lappend $result [$w get $i]
+   }
+}  
+
+
+proc Scrolled_Listbox { f args } {
+   frame $f
+   listbox $f.list \
+      -xscrollcommand [list Scroll_Set $f.xscroll \
+         [list grid $f.xscroll -row 1 -column 0 -sticky we]] \
+      -yscrollcommand [list Scroll_Set $f.yscroll \
+         [list grid $f.yscroll -row 0 -column 1 -sticky ns]]
+   eval {$f.list configure} $args
+   scrollbar $f.xscroll -orient horizontal \
+       -command [list $f.list xview]
+   scrollbar $f.yscroll -orient vertical \
+       -command [list $f.list yview]
+   grid $f.list $f.yscroll -sticky news
+   grid $f.xscroll -sticky news
+   grid rowconfigure $f 0 -weight 1
+   grid columnconfigure $f 0 -weight 1
+   return $f.list
+}
+ 
+
+proc Scroll_Set {scrollbar geoCmd offset size} {
+   if {$offset != 0.0 || $size != 1.0} {
+      eval $geoCmd     ;# Make sure it is visible
+      $scrollbar set $offset $size
+   } else {
+      set manager [lindex $geoCmd 0]
+      $manager forget $scrollbar ;# hide it
+   }
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_GENERATE {}
+#
+#   date: 02/27/96
+#   last update: 04/03/96, 11/07/96
+#------------------------------------------------------------------------------#
+
+
+proc Mutants_Generate {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Mutants Generation"
+   wm iconname $w "Generation"
+   wm geometry $w +10+65
+   wm minsize  $w 250 100
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 250 100
+    	wm geometry $w 250x100
+   }
+   set infogeneral [Report GENERAL 0]
+
+   # If error building report, return 
+   if {[string length $infogeneral] == 0} {
+      return
+   } else {
+       Disjoin_Infogeneral $infogeneral ALL
+   }  
+
+   frame $w.f1 
+   pack  $w.f1 -fill x -pady 10
+
+   frame  $w.f1.f1 
+   frame  $w.f1.f2
+   pack   $w.f1.f1 $w.f1.f2 -side left
+
+   label $w.f1.f1.l -text "Classes:" 
+   pack  $w.f1.f1.l 
+
+
+   menubutton $w.f1.f2.r -menu $w.f1.f2.r.m -relief raised -cursor hand2
+   pack $w.f1.f2.r -side left  
+      menu $w.f1.f2.r.m -tearoff 0
+
+      # if option "Group I" was choosen in menu
+      $w.f1.f2.r.m add command -label "Group I" -command { \
+         set v .proteum.muta.m.dlg
+
+         if {![winfo exists $v.group1]} {
+            $v.f1.f2.l configure -text "Group I"
+            Group_I_Operator $v.group1
+         }
+         # Destroy window of other class mutation operators
+         if {[winfo exists $v.group2]} {
+            destroy $v.group2
+         }
+      }
+
+
+      # if option "Group II" was choosen in menu
+      $w.f1.f2.r.m add command -label "Group II" -command { \
+         set v .proteum.muta.m.dlg
+
+         if {![winfo exists $v.group2]} {
+            $v.f1.f2.l configure -text "Group II"
+            Group_II_Operator $v.group2    
+         }
+         # Destroy window of other class mutation operators
+         if {[winfo exists $v.group1]} {
+            destroy $v.group1
+         } 
+      }
+    
+
+   label  $w.f1.f2.l -text "Group I" 
+   pack   $w.f1.f2.l -side left
+   Group_I_Operator $w.group1
+
+   frame  $w.f2    
+   pack   $w.f2 -pady 5
+   button $w.f2.confirm -text Generate -command {
+      # Destroy mutation operator window
+      set v .proteum.muta.m.dlg  
+      if {[winfo exists $v.group1]} {
+         destroy $v.group1
+      } elseif {[winfo exists $v.group2]} {
+         destroy $v.group2
+      }  
+      set confirm 1;          # Variable for user not interact with other window
+      Generate_Mutants
+   }
+
+   button $w.f2.cancel  -text Cancel -command "
+      destroy $w
+      set confirm 0";         # Variable for user not interact with other window
+   pack   $w.f2.confirm $w.f2.cancel -side left
+
+   wm protocol $w WM_DELETE_WINDOW {
+      set confirm 0
+      destroy .proteum.muta.m.dlg
+   }
+ 
+   bind $w <Any-Motion> {focus %W}
+
+   grab $w 
+   tkwait variable confirm
+   grab release $w
+}
+
+
+
+#------------------------------------------------------------------------------#
+#  GENERATE_MUTANTS {}
+#  Generate mutants using mutantion operators percentage.
+#  date: 04/08/96
+#  last update: 04/11/96
+#------------------------------------------------------------------------------#
+
+
+proc Generate_Mutants {} {
+   destroy .proteum.muta.m.dlg;          # Destroy last window
+   set g_tot 0;                          # Total of generated mutants
+ 
+   Set_Busy ON
+
+   set listopt [Join_Operator_Percentage_Maxmut 1]
+   set mutgen [Muta ADD $listopt]
+   set g_tot $mutgen
+
+   set listopt [Join_Operator_Percentage_Maxmut 2]
+   set mutgen [Muta ADD $listopt]
+   set g_tot [expr $g_tot + $mutgen]
+
+   Set_Busy OFF
+
+   message "$g_tot Mutants Generated"
+   set infogeneral [Report GENERAL 0]
+
+   # If error building report, return 
+   if {[string length $infogeneral] == 0} {
+      return
+   } else {
+       Disjoin_Infogeneral $infogeneral PART
+   }    
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   GROUP_I_OPERATOR {}
+#   Shows Group II operators list to select percentage and the number of mutants
+#   to generate.
+#   date: 02/29/96
+#   last update: 11/07/96
+#------------------------------------------------------------------------------#
+
+
+proc Group_I_Operator {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Group I Mutation"
+   wm iconname $w "GII_Mut"
+   wm geometry $w +10+198
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 552 300
+   	wm geometry $w 552x300
+   }
+   wm minsize  $w 552 300 
+ 
+   global group1_data; # Names of the mutation operators 
+   global group1_n;    # Percentage of mutations operator
+   global group1_m;    # Number of mutants to be generated in each mut. point
+   global group1_o;    # Number of generated mutants
+   global group1_u;    # NOT_USED if op. of group1 is not used, USED otherwise
+   global USED NOT_USED
+   global in
+
+   set tot       0;    # Total of generated mutants
+   set in(def_n) 100
+   set in(def_m) 0
+
+
+   frame $w.f1
+   pack  $w.f1 -fill x -padx 50
+
+   button $w.f1.default -text "Apply Default" -command "
+      Apply_Default GROUP1 GENERATE"
+   label  $w.f1.l1 -text "Percentage:"
+   entry  $w.f1.n -width 4 -justify right -textvariable in(def_n)
+   label  $w.f1.l2 -text "Limit:"
+   entry  $w.f1.m -width 4 -justify right -textvariable in(def_m)
+   pack   $w.f1.m $w.f1.l2 $w.f1.n $w.f1.l1 $w.f1.default -side right -pady 10
+ 
+   # Create text area to insert operators name, in and out field 
+   text $w.t -yscrollcommand "$w.s set" -relief sunken -bd 1 -state disabled \
+             -cursor top_left_arrow
+   scrollbar $w.s -command "$w.t yview"
+   pack $w.s -side right -fill both
+   pack $w.t -expand yes 
+
+   set i 1
+   foreach item $group1_data {
+      frame $w.t.$i 
+      pack  $w.t.$i 
+      $w.t window create end -window $w.t.$i
+
+      label $w.t.$i.l -text $item -width 58 -anchor w
+      pack  $w.t.$i.l -side left
+
+      entry $w.t.$i.n -width 4 -justify right -textvariable group1_n($i)
+      entry $w.t.$i.m -width 4 -justify right -textvariable group1_m($i)
+      label $w.t.$i.o -width 4 -relief sunken -cursor top_left_arrow
+
+      pack  $w.t.$i.n $w.t.$i.m $w.t.$i.o -side left
+
+      if {$group1_u($i) == $NOT_USED} {
+#         set group1_n($i) 100
+#         set group1_m($i) 0
+#         set tot [expr $tot+$group1_m($i)]
+      } else {
+#         $w.t.$i.n config -state disabled
+#         $w.t.$i.p config -state disabled
+         $w.t.$i.o config -text $group1_o($i) -anchor e
+      }
+      incr i
+   }
+
+   frame $w.t.f1 
+   pack  $w.t.f1
+   $w.t window create end -window $w.t.f1 -pady 10
+
+#   label $w.t.f1.l -width 48 -text {TOTAL:  } -anchor e
+#   label $w.t.f1.out -width 4 -text $tot -relief sunken -anchor e  
+#   pack  $w.t.f1.l $w.t.f1.out -side left
+
+   bind $w <Any-Motion> {focus %W}
+}
+
+
+ 
+
+#------------------------------------------------------------------------------#
+#   GROUP_II_OPERATOR {}
+#   Shows Operator Mutations operators list to select percentage.
+#   date: 02/29/96
+#   last update: 04/17/96
+#------------------------------------------------------------------------------#
+
+proc Group_II_Operator {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Group II Mutants"
+   wm iconname $w "GII_Mut"
+   wm geometry $w +10+198
+   if { $FIXEDSIZE } {
+   	wm geometry $w 552x300
+   	wm maxsize  $w 552 300
+   }
+   wm minsize  $w 552 300 
+
+   global group2_data; # Names of the mutation operators 
+   global group2_n;    # Percentage of mutations operator
+   global group2_m;    # Number of mutants to generate
+   global group2_o;    # Number of generated mutants
+   global group2_u;    # NOT_USED if op. of group1 is not used, USED otherwise
+   global USED NOT_USED
+   global in
+
+   set tot       0;     # Total of generated mutants
+   set in(def_n) 100
+   set in(def_m) 0
+
+   frame $w.f1
+   pack  $w.f1 -fill x -padx 50
+
+   button $w.f1.default -text "Apply Default" -command "
+      Apply_Default GROUP2 GENERATE"
+   label  $w.f1.l1 -text "Percentage:"
+   entry  $w.f1.n -width 4 -justify right -textvariable in(def_n)
+   label  $w.f1.l2 -text "Limit:"
+   entry  $w.f1.m -width 4 -justify right -textvariable in(def_m)
+   pack   $w.f1.m $w.f1.l2 $w.f1.n $w.f1.l1 $w.f1.default -side right -pady 10
+ 
+   # Button for UP and DOWN of default percentage 
+   button $w.f1.up -text up -command {
+      set v .proteum.muta.m.dlg.group2.f1
+
+      $v.dw config -state normal
+      if {$default < 100} {
+         incr default
+         if {$default == 100} "$v.up config -state disabled"
+      } else {
+         $v.up config -state disabled
+      }
+   }
+   button $w.f1.dw -text dw -command {
+      set v .proteum.muta.m.dlg.group2.f1
+
+      $v.up config -state normal
+      if {$default > 0} {
+         incr default -1
+         if {$default == 0} "$v.dw config -state disabled"
+      } else {
+         $v.dw config -state disabled
+      } 
+   }
+
+
+   # Create text area to insert operators name, in and out field 
+   text $w.t -relief sunken -bd 1 -state disabled \
+             -cursor top_left_arrow
+#   text $w.t -yscrollcommand "$w.s set" -relief sunken -bd 1 -state disabled \
+             -cursor top_left_arrow
+#   scrollbar $w.s -command "$w.t yview"
+#   pack $w.s -side right -fill both
+   pack $w.t -expand yes 
+
+   set i 1
+   foreach item $group2_data {
+      frame $w.t.$i 
+      pack  $w.t.$i 
+      $w.t window create end -window $w.t.$i
+
+      label $w.t.$i.l -text $item -width 58 -anchor w
+      pack  $w.t.$i.l -side left
+
+      entry $w.t.$i.n -width 4 -justify right -textvariable group2_n($i)
+      entry $w.t.$i.m -width 4 -justify right -textvariable group2_m($i)
+      label $w.t.$i.o -width 4 -relief sunken -cursor top_left_arrow
+
+      pack  $w.t.$i.n $w.t.$i.m $w.t.$i.o -side left
+
+
+      if {$group2_u($i) == $NOT_USED} {
+#         set group2_n($i) 100
+#         set group2_m($i) 0
+#         set tot [expr $tot+$group2_n($i)]
+      } else {
+#         $w.t.$i.n config -state disabled
+#         $w.t.$i.p config -state disabled
+         $w.t.$i.o config -text $group2_o($i) -anchor e
+      }
+      incr i
+   }
+
+   frame $w.t.f1 
+   pack  $w.t.f1
+   $w.t window create end -window $w.t.f1 -pady 10
+
+   bind $w <Any-Motion> {focus %W}
+}
+
+
+
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_VIEW_WINDOW {}
+#   View mutants.
+#   date: 03/01/96
+#   last update: 07/01/96
+#------------------------------------------------------------------------------#
+
+
+proc Mutants_View_Window {w args} {
+   global FIXEDFONT
+   toplevel $w
+   wm title $w "View Mutants"
+   wm iconname $w "View_Mut"
+   wm geometry $w +10+65
+
+   global out
+   global f1;                            # Font
+   global mutant;                        # Number of current mutant
+   global muta;                          # Mutant's information
+   global type0 type1 type2 type3 type4; # Type of the mutants
+   set mutant 0;                         # Initializes number of current mutant
+  
+
+   frame $w.f1
+   frame $w.f1.f1 
+   label $w.f1.f1.l1 -text "  Mutant:"
+   entry $w.f1.f1.in -width 7 -textvariable mutant
+   pack  $w.f1.f1.l1 $w.f1.f1.in -side left
+
+   label $w.f1.f1.l -text "Type to Show:"
+   checkbutton $w.f1.f1.c1 -selectcolor green -cursor hand2 -text Alive      \
+                           -variable type0
+   checkbutton $w.f1.f1.c2 -selectcolor green -cursor hand2 -text Dead       \
+                           -variable type1
+   checkbutton $w.f1.f1.c3 -selectcolor green -cursor hand2 -text Anomalous  \
+                           -variable type2
+   checkbutton $w.f1.f1.c4 -selectcolor green -cursor hand2 -text Equivalent \
+                           -variable type3
+   checkbutton $w.f1.f1.c5 -selectcolor green -cursor hand2 -text Inactive   \
+                           -variable type4
+   pack $w.f1.f1.c5 $w.f1.f1.c4 $w.f1.f1.c3 \
+        $w.f1.f1.c2 $w.f1.f1.c1 $w.f1.f1.l -side right
+
+   # Button for UP and DOWN of number of the mutant
+   button $w.f1.f1.up -text up -command {
+      set v .proteum.muta.m.dlg.f1.f1
+
+
+      $v.dw config -state normal
+      if {$mutant >= [expr $out(totmut)-1]} {
+         set mutant [expr $out(totmut)-2]
+      }
+      incr mutant
+
+      if {$mutant == $out(totmut)} {
+         $v.up config -state disabled
+      }
+      Set_Busy ON
+      Mount_Show_Mutant 1
+      Set_Busy OFF
+   }
+
+   button $w.f1.f1.dw -text dw -command {
+      set v .proteum.muta.m.dlg.f1.f1
+
+      $v.up config -state normal
+      if {$mutant <= 0} {
+         set mutant 1
+      }
+      incr mutant -1
+      if {$mutant == 0} {
+         $v.dw config -state disabled
+      }
+      Set_Busy ON
+      Mount_Show_Mutant -1
+      Set_Busy OFF
+   }
+
+   pack $w.f1.f1.up $w.f1.f1.dw -side left
+
+   frame $w.f1.f2
+   label $w.f1.f2.l1 -text "   Status:"
+   label $w.f1.f2.l2 -width 45 -relief sunken -anchor w -font $f1
+   checkbutton $w.f1.f2.c -selectcolor green -text Equivalent -variable equiv \
+                          -onvalue 1 -offvalue 0 -cursor hand2
+   pack $w.f1.f2.l1 $w.f1.f2.l2 $w.f1.f2.c -side left
+
+   frame $w.f1.f3
+   pack  $w.f1.f1 $w.f1.f2 $w.f1.f3 -expand true -fill x -padx 10
+   label $w.f1.f3.l1 -text "Operator:"
+   label $w.f1.f3.l2 -width 57 -relief sunken -anchor w -font $f1
+   pack  $w.f1.f3.l1 $w.f1.f3.l2 -side left
+
+
+
+
+
+   frame $w.f2
+   pack  $w.f1 $w.f2    -side top -expand true -fill x -pady 10
+
+   frame  $w.f2.f1
+   frame  $w.f2.f1.f1
+   label  $w.f2.f1.f1.l -text "Original Program"
+#   button $w.f2.f1.f1.b -text Execute -command "Exemuta ORIGINAL"
+   pack   $w.f2.f1.f1.l 
+#   pack   $w.f2.f1.f1.l $w.f2.f1.f1.b 
+
+   frame $w.f2.f1.f2 
+   pack  $w.f2.f1.f1 $w.f2.f1.f2 -side top
+   text      $w.f2.f1.f2.t -yscrollcommand "$w.f2.f1.f2.yscroll set" \
+                           -width 80 -height 37 -bg white -cursor top_left_arrow -font $FIXEDFONT
+   scrollbar $w.f2.f1.f2.yscroll -command "$w.f2.f1.f2.t yview"
+   pack      $w.f2.f1.f2.yscroll -side right -fill y
+   pack      $w.f2.f1.f2.t -expand true -fill both
+
+   frame $w.f2.f2
+   pack  $w.f2.f1 $w.f2.f2 -side left -padx 5
+
+   frame  $w.f2.f2.f1
+   label  $w.f2.f2.f1.l -text "Mutant Program"
+#   button $w.f2.f2.f1.b -text Execute -command "Exemuta EXECONE $mutant"
+   pack   $w.f2.f2.f1.l 
+#   pack   $w.f2.f2.f1.l $w.f2.f2.f1.b 
+
+   frame  $w.f2.f2.f2
+   pack   $w.f2.f2.f1 $w.f2.f2.f2 -side top
+   text      $w.f2.f2.f2.t -yscrollcommand "$w.f2.f2.f2.yscroll set" \
+                           -width 80 -height 37 -bg white \
+                           -cursor top_left_arrow -font $FIXEDFONT
+   scrollbar $w.f2.f2.f2.yscroll -command "$w.f2.f2.f2.t yview"
+   pack      $w.f2.f2.f2.yscroll -side right -fill y
+   pack      $w.f2.f2.f2.t -expand true -fill both
+
+   frame  $w.f3
+   pack   $w.f3 
+   button $w.f3.ok -text OK -width 10 -command "
+          destroy .proteum.muta.m.dlg
+          set ok 1"
+   pack   $w.f3.ok -side left -pady 10
+
+   # Mutant number 0 is showed
+   if {$mutant == 0} {
+      $w.f1.f1.dw config -state disabled
+      Set_Busy ON
+      Mount_Show_Mutant 0
+      Set_Busy OFF
+   }
+
+   # Equivalent checkbutton is selected
+   bind $w.f1.f2.c <ButtonPress> {
+      if {$equiv == 0} {
+         Muta EQUIV $mutant
+      } else {
+         Muta NEQUIV $mutant
+      }
+   }
+ 
+   # When <return> is pressed in field "number of mutant"
+   bind $w.f1.f1.in <Return> {
+       set v .proteum.muta.m.dlg.f1.f1
+
+       if {$mutant < 0} {
+	  set mutant 0
+       } elseif {$mutant >= $out(totmut)} {
+	  set mutant [expr $out(totmut)-1]
+       }
+
+       if {$mutant == 0} {
+          $v.up config -state normal
+          $v.dw config -state disabled
+          Set_Busy ON
+          Mount_Show_Mutant 0
+          Set_Busy OFF
+
+       }  elseif {$mutant == [expr $out(totmut)-1]} {
+          $v.up config -state disabled
+          $v.dw config -state normal
+          Set_Busy ON
+          Mount_Show_Mutant 0
+          Set_Busy OFF
+
+       } else {
+          $v.up config -state normal
+          $v.dw config -state normal
+          Set_Busy ON
+          Mount_Show_Mutant 0
+          Set_Busy OFF
+       }
+   }
+ 
+   bind $w <Any-Motion> {focus %W}
+
+   wm protocol $w WM_DELETE_WINDOW {
+      set ok 1
+      destroy .proteum.muta.m.dlg
+   }
+
+   grab $w 
+   tkwait variable ok
+   grab release $w
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   MOUNT_SHOW_MUTANT {}
+#   Mounts mutants and its information, and shows them.
+#   date: 04/18/96
+#   last update: 06/28/96, 11/18/96, 09/12/97
+#------------------------------------------------------------------------------#
+
+proc Mount_Show_Mutant {increment} {
+   global test
+   global mutant;                                 # Number of current mutant
+   global muta;                                   # Information of one mutant
+   global out;                                    # General inf. about mutants
+   global group1_data group2_data;                # Operators' names
+   global NGROUP1 NGROUP2;                        # Number of operator per class
+   global type0 type1 type2 type3 type4;          # Type of the Mutant
+
+   set nline    0
+
+   # OBS: VERIFICAR SE "mutant" CONTEM UM VALOR VALIDO E TIRAR ESPACOS EM BRANCO
+
+   if {$mutant < 0} {
+      set mutant [expr $mutant + 1]
+      .proteum.muta.m.dlg.f1.f1.dw config -state disabled
+      return
+   }
+
+   if {$mutant >= $out(totmut)} {
+      set mutant [expr $mutant - 1]
+      .proteum.muta.m.dlg.f1.f1.up config -state disabled
+      return
+   } 
+
+   if {$increment >= 0} {
+      set aux "-up"
+   } else { 
+      set aux "-down"
+   }
+
+   if {$type0} {
+      set aux " $aux -alive"
+   }
+
+   if {$type1} {
+      set aux " $aux -dead"
+   }
+
+   if {$type2} {
+      set aux " $aux -anomalous"
+   }
+
+   if {$type3} {
+      set aux " $aux -equiv"
+   }
+
+   if {$type4} {
+      set aux " $aux -inactive"
+   }
+
+   set aux "$aux -f $mutant "
+   set aux1 [Muta SEARCH $aux]
+   set aux2 ""
+
+   if {$increment == 0} {
+      set aux [string range $aux [expr [string first "-up" $aux]+3] end]
+      set aux " -down $aux"
+      set aux2 [Muta SEARCH $aux]
+   }
+
+   if {[string length $aux1] != 0 && [string length $aux2] != 0} {
+      if {[expr $aux1-$mutant] > [expr $mutant-$aux2]} {
+         set aux1 $aux2
+      }
+   } elseif {[string length $aux2] != 0} {
+      set aux1 $aux2
+   }
+
+   if {[string length $aux1] != 0} {
+      set mutant $aux1
+   } else {
+      set mutant [expr $mutant-$increment]
+   }
+
+
+   set infomuta [Muta LIST $mutant]
+   set v .proteum.muta.m.dlg
+   Disjoin_Infomuta $infomuta;         # Disjoins mutation information
+
+
+   # If mutants is equivalent, selects checkbutton
+   if {![string compare $muta(status0) "Equivalent"]} {
+      $v.f1.f2.l2 config -text "Alive; $muta(status1)"
+      $v.f1.f2.c select
+   } else {
+      $v.f1.f2.l2 config -text "$muta(status0); $muta(status1)"
+      $v.f1.f2.c deselect 
+   }
+
+   # If mutant is not alive, disable checkbutton
+   if {[string compare $muta(status0) "Alive"] == 0 || \
+       [string compare $muta(status0) "Equivalent"] == 0} {
+      $v.f1.f2.c config -state normal
+   } else {
+      $v.f1.f2.c config -state disabled
+   }
+
+   # Looks for name of mutation operator
+   if {$muta(num_op) <= [expr $NGROUP1-1]} {
+       $v.f1.f3.l2 config -text [lindex $group1_data $muta(num_op)]
+
+   } else {
+      $v.f1.f3.l2 config -text [lindex $group2_data      \
+                               [expr $muta(num_op) - $NGROUP1]]
+   }       
+
+
+   if {![Exemuta BUILD $mutant]} {;        # Mounts mutant 
+      return;         # Error
+   }
+   
+   set arqf $test(dir)/muta[Blank_Space_Out $mutant]\_$test(tfile)
+
+   # Loads source code of original program
+   if { $muta(c_init0) < 0 } {
+   	set aux1 [expr $muta(d_init0) - $muta(calling) ]
+   } else {
+	set aux1 [expr $muta(c_init0) - $muta(called) ]
+   }
+
+   set nline [Load_Src $arqf $v.f2.f1.f2.t $aux1 ]
+   HiLight $v.f2.f1.f2.t 0
+
+
+   # Loads source code of mutant program
+
+   Load_Src ${arqf}.c \
+            $v.f2.f2.f2.t                                            \
+            $aux1 
+   HiLight $v.f2.f2.f2.t 0
+   exec rm $arqf ${arqf}.c
+}
+
+ 
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_EQUIVALENTS {}
+#
+#   date: 96/03/04
+#   last update: 96/03/04
+#------------------------------------------------------------------------------#
+
+
+proc Mutants_Equivalents {w} {
+   toplevel $w
+   wm title $w "Set/Reset Equivalent Mutants"
+   wm iconname $w "Equivalent"
+   wm geometry $w +10+65
+
+   global equiv nequiv
+
+   set equiv  ""
+   set nequiv ""
+
+   frame $w.f1
+   pack  $w.f1 -expand true -pady 5
+   label $w.f1.l -text "      Set Equivalent:"
+   entry $w.f1.in -width 50 -textvariable equiv
+   pack  $w.f1.l $w.f1.in -side left
+
+   frame $w.f2
+   pack  $w.f2 -expand true
+   label $w.f2.l -text "Set Not Equivalent:"
+   entry $w.f2.in -width 50 -textvariable nequiv
+   pack  $w.f2.l $w.f2.in -side left
+  
+   frame  $w.f3
+   pack   $w.f3 -expand true
+   button $w.f3.confirm -text Confirm -command "
+          set confirm 1
+          Set_Busy ON
+          Set_Equiv_Nequiv .proteum.muta.m.dlg
+          Set_Busy OFF"
+   button $w.f3.cancel  -text Cancel -command "
+          set confirm 0
+          destroy $w"
+   pack   $w.f3.confirm $w.f3.cancel -side left -pady 10
+
+   bind $w <Any-Motion> {focus %W}
+   bind $w.f1.in      <Tab>    [list focus $w.f2.in]
+   bind $w.f2.in      <Tab>    [list focus $w.f3.confirm]
+   bind $w.f3.confirm <Tab>    [list focus $w.f3.cancel]
+   bind $w.f3.cancel  <Tab>    [list focus $w.f1.in]
+   bind $w.f1.in      <Return> [list focus $w.f2.in]
+   bind $w.f2.in      <Return> "$w.f3.confirm invoke"
+
+   wm protocol $w WM_DELETE_WINDOW {
+      set confirm 1
+      destroy .proteum.muta.m.dlg
+   }
+   grab $w 
+   tkwait variable confirm
+   grab release $w
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   SET_EQUIV_NEQUIV {}
+#   Sets mutants for equivalent or not equivalent.
+#   date: 04/23/96
+#   last update: 04/24/96
+#------------------------------------------------------------------------------#
+
+proc Set_Equiv_Nequiv {w} { 
+
+   global equiv nequiv
+  
+   if {[string compare $equiv ""] != 0} {
+      if {![Muta EQUIV $equiv]} {
+         return 
+      }
+   }
+   if {[string compare $nequiv ""] != 0} {
+      if {![Muta NEQUIV $nequiv]} {
+         return
+      }
+   }
+   destroy $w
+   return 
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_EXECUTE_WINDOW {}
+#   Execute mutants with test cases.
+#   date: 03/04/96
+#   last update: 05/20/96, 11/27/96, 09/11/97
+#------------------------------------------------------------------------------#
+
+
+proc Mutants_Execute_Window {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Execute"
+   wm iconname $w "Ex_mut"
+   wm geometry $w +150+200
+   wm minsize  $w 350 70
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 350 70
+   	wm geometry $w 350x70
+   }
+
+   global timeout;              # Timeout for mutant execution
+   global nmuta;                # Number of current mutant in execution
+   global execcan;              # Flag that determine if Cancel was pushed
+
+   set nmuta  0  
+   set execcan 0
+
+   frame $w.f1
+   pack  $w.f1 -expand true -pady 5
+
+   label $w.f1.l -text "Executing Mutants..."
+   entry $w.f1.out -width 10 -textvariable nmuta -justify center
+   pack $w.f1.l $w.f1.out -side left -padx 10
+
+   button $w.f1.cancel -text {Cancel} -command "set execcan 1"
+   pack $w.f1.cancel -side top -pady 10
+
+   update
+   Exemuta EXEC $timeout
+   destroy $w
+}
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_SELECT_WINDOW {}
+#   Selects mutants to be active. Others are marked as inactive and do not 
+#   influence at computing mutation score.
+#   date: 11/19/96
+#   last update: 11/19/96
+#------------------------------------------------------------------------------#
+
+proc Mutants_Select_Window {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Select Mutant/Connections"
+   wm iconname $w "Connetions"
+   wm geometry $w +10+65
+   wm minsize  $w 450 300
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 450 300
+   	wm geometry $w 450x300
+   }
+
+   global connection
+   global MAXCONNECTIONS
+   global ALL_CONNEC_SEL
+   global ALL_MUTANTS
+   global in
+  
+   frame  $w.f0    
+   pack   $w.f0 -fill x -pady 5
+
+   label  $w.f0.l1 -text "Mutants: from"
+   entry  $w.f0.f -width 4 -justify right -textvariable in(from)
+   label  $w.f0.l2 -text "to"
+   entry  $w.f0.t -width 4 -justify right -textvariable in(to)
+   pack   $w.f0.l1 $w.f0.f $w.f0.l2 $w.f0.t -side left
+
+   frame  $w.f1    
+   pack   $w.f1 -pady 5 -fill x
+   checkbutton $w.f1.c -text "All Mutants" -variable ALL_MUTANTS \
+                       -selectcolor green -cursor hand2
+   pack $w.f1.c -side left
+
+
+   frame  $w.f2    
+   pack   $w.f2 -pady 5
+   label  $w.f2.l -text "Select Connection:"
+   pack   $w.f2.l -anchor w
+   text   $w.f2.t -yscrollcommand "$w.f2.s set" -width 77 \
+                   -height 7 -cursor top_left_arrow -state disabled
+   scrollbar $w.f2.s -command "$w.f2.t yview"
+   pack $w.f2.s -side right -fill both
+   pack $w.f2.t -expand true
+
+   Show_Connection $w.f2.t SELECT
+
+   frame  $w.f3    
+   pack   $w.f3 -pady 5 -fill x
+   checkbutton $w.f3.c -text "All Connections" -variable ALL_CONNEC_SEL \
+                       -selectcolor green -cursor hand2
+   pack $w.f3.c -side left
+
+
+   frame  $w.f4    
+   pack   $w.f4 -pady 10 -side bottom
+
+   button $w.f4.continue -text Continue -command {
+      destroy .proteum.muta.m.dlg
+      Mutants_Select .proteum.muta.m.dlg
+   }
+
+   button $w.f4.cancel -width 5 -text Cancel -command "
+      destroy $w
+      set confirm 0";         # Variable for user not interact with other window
+   pack   $w.f4.continue $w.f4.cancel -side left
+
+
+   wm protocol $w WM_DELETE_WINDOW {
+      set confirm 0
+      destroy .proteum.muta.m.dlg
+   }
+   bind $w <Any-Motion> {focus %W}
+   grab $w 
+   tkwait variable confirm
+   grab release $w
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   MUTANTS_SELECT {}
+#   Selects mutants to remain active.
+#   date: 11/19/96
+#   last update: 11/19/96
+#------------------------------------------------------------------------------#
+
+proc Mutants_Select {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Mutant Selection"
+   wm iconname $w "Generation"
+   wm geometry $w +10+65
+   wm minsize  $w 250 100
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 250 100
+    	wm geometry $w 250x100
+   }
+
+   global stat_tot
+
+   set stat_tot 0
+
+   frame $w.f1 
+   pack  $w.f1 -fill x -pady 10
+
+   frame  $w.f1.f1 
+   frame  $w.f1.f2
+   pack   $w.f1.f1 $w.f1.f2 -side left
+
+   label $w.f1.f1.l -text "Classes:" 
+   pack  $w.f1.f1.l 
+
+
+   menubutton $w.f1.f2.r -menu $w.f1.f2.r.m -relief raised -cursor hand2
+   pack $w.f1.f2.r -side left  
+      menu $w.f1.f2.r.m -tearoff 0
+
+      # if option "Group I" was choosen in menu
+      $w.f1.f2.r.m add command -label "Group I" -command { \
+         set v .proteum.muta.m.dlg
+
+         if {![winfo exists $v.group1]} {
+            $v.f1.f2.l configure -text "Group I"
+            Group_I_Sel_Operator $v.group1
+         }
+         # Destroy window of other class mutation operators
+         if {[winfo exists $v.group2]} {
+            destroy $v.group2
+         }
+      }
+
+      # if option "Group II" was choosen in menu
+      $w.f1.f2.r.m add command -label "Group II" -command { \
+         set v .proteum.muta.m.dlg
+
+         if {![winfo exists $v.group2]} {
+            $v.f1.f2.l configure -text "Group II"
+            Group_II_Sel_Operator $v.group2    
+         }
+         # Destroy window of other class mutation operators
+         if {[winfo exists $v.group1]} {
+            destroy $v.group1
+         } 
+      }
+    
+   label  $w.f1.f2.l -text "Group I" 
+   pack   $w.f1.f2.l -side left
+   Group_I_Sel_Operator $w.group1
+
+   frame  $w.f2    
+   pack   $w.f2 -pady 5
+   button $w.f2.confirm -text Select -command {
+      # Destroy mutation operator window
+      set v .proteum.muta.m.dlg  
+      if {[winfo exists $v.group1]} {
+         destroy $v.group1
+      } elseif {[winfo exists $v.group2]} {
+         destroy $v.group2
+      }  
+      set confirm 1;          # Variable for user not interact with other window
+      Select_Mutants
+   }
+
+   button $w.f2.cancel  -text Cancel -command "
+      destroy $w
+      set confirm 0";         # Variable for user not interact with other window
+   pack   $w.f2.confirm $w.f2.cancel -side left
+
+   wm protocol $w WM_DELETE_WINDOW {
+      set confirm 0
+      destroy .proteum.muta.m.dlg
+   }
+ 
+   bind $w <Any-Motion> {focus %W}
+
+   grab $w 
+   tkwait variable confirm
+   grab release $w
+}
+
+#------------------------------------------------------------------------------#
+#  SELECT_MUTANTS {}
+#  Select mutants.
+#  date: 11/19/96
+#  last update: 11/20/96, 11/25/96
+#------------------------------------------------------------------------------#
+
+proc Select_Mutants {} {
+   global group1_data group2_data;       # Operator's name
+
+   destroy .proteum.muta.m.dlg;          # Destroy last window
+   set g_tot 0;                          # Total of generated mutants
+ 
+   Set_Busy ON
+
+   set listopt [Join_Operator_Percentage 1]
+   set mutsel [Exemuta SELECT $listopt]
+
+   set listopt [Join_Operator_Percentage 2]
+   set mutgen [Exemuta SELECT $listopt]
+  
+   Set_Busy OFF
+
+   message "$g_tot Selected Mutants"
+}
+
+
+#------------------------------------------------------------------------------#
+#   GROUP_I_SEL_OPERATOR {}
+#   
+#   date: 11/19/96
+#   last update: 11/20/96
+#------------------------------------------------------------------------------#
+
+proc Group_I_Sel_Operator {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Group I Mutation/Selection"
+   wm iconname $w "GI_Mut"
+   wm geometry $w +10+198
+   wm maxsize  $w 515 300
+   if { $FIXEDSIZE } {
+   	wm minsize  $w 515 300 
+    	wm geometry $w 515x300
+   }
+
+   global group1_data;  # Names of the mutation operators 
+   global group1_s;     # Percentage of mutations operator
+
+   set tot        0;    # Total of generated mutants
+   set in(def_s)  0
+
+   frame $w.f1
+   pack  $w.f1 -fill x -padx 10
+
+   button $w.f1.default -text "Apply Default" -command "
+      Apply_Default GROUP1 SELECT"
+   entry  $w.f1.s -width 4 -justify right -textvariable in(def_s)
+   pack   $w.f1.s $w.f1.default -side right -pady 10
+ 
+
+   # Create text area to insert operators name, in and out field 
+   text $w.t -yscrollcommand "$w.s set" -relief sunken -bd 1 -state disabled \
+             -cursor top_left_arrow
+   scrollbar $w.s -command "$w.t yview"
+   pack $w.s -side right -fill both
+   pack $w.t -expand yes 
+
+   set i 1
+   foreach item $group1_data {
+      frame $w.t.$i 
+      pack  $w.t.$i 
+      $w.t window create end -window $w.t.$i 
+      label $w.t.$i.l -text $item -width 63 -anchor w
+      pack  $w.t.$i.l -side left
+
+      entry $w.t.$i.group1_s -width 4 -justify right -textvariable group1_s($i)
+      pack  $w.t.$i.group1_s -side left
+
+      incr i
+   }
+
+   frame $w.t.f1 
+   pack  $w.t.f1
+   $w.t window create end -window $w.t.f1 -pady 10
+   bind $w <Any-Motion> {focus %W}
+}
+
+
+
+#------------------------------------------------------------------------------#
+#   GROUP_II_SEL_OPERATOR {}
+#   Shows Operator Mutations operators list to select percentage
+#   date: 05/28/96
+#   last update: 05/28/96
+#------------------------------------------------------------------------------#
+
+proc Group_II_Sel_Operator {w} {
+   global FIXEDSIZE
+   toplevel $w
+   wm title $w "Group II Mutation/Selection"
+   wm iconname $w "GII_Mut"
+   wm geometry $w +10+198
+   wm minsize  $w 515 300 
+   if { $FIXEDSIZE } {
+   	wm maxsize  $w 515 300
+    	wm geometry $w 515x300
+   }
+
+   global group2_data;  # Names of the mutation operators 
+   global group2_s;     # Percentage of mutations operator
+
+   set tot        0;    # Total of generated mutants
+   set in(def_s)  0
+
+   frame $w.f1
+   pack  $w.f1 -fill x -padx 10
+
+   button $w.f1.default -text "Apply Default" -command "
+      Apply_Default GROUP2 SELECT"
+   entry  $w.f1.s -width 4 -justify right -textvariable in(def_s)
+   pack   $w.f1.s $w.f1.default -side right -pady 10
+ 
+
+   # Create text area to insert operators name, in and out field 
+   text $w.t -yscrollcommand "$w.s set" -relief sunken -bd 1 -state disabled \
+             -cursor top_left_arrow
+   scrollbar $w.s -command "$w.t yview"
+   pack $w.s -side right -fill both
+   pack $w.t -expand yes 
+
+   set i 1
+   foreach item $group2_data {
+      frame $w.t.$i 
+      pack  $w.t.$i 
+      $w.t window create end -window $w.t.$i 
+      label $w.t.$i.l -text $item -width 63 -anchor w
+      pack  $w.t.$i.l -side left
+
+      entry $w.t.$i.group2_s -width 4 -justify right -textvariable group2_s($i)
+      pack  $w.t.$i.group2_s -side left
+
+      incr i
+   }
+
+   frame $w.t.f1 
+   pack  $w.t.f1
+   $w.t window create end -window $w.t.f1 -pady 10
+   bind $w <Any-Motion> {focus %W}
+}
+
+
+#-----------------------------------------------------------------------------#
+#   APPLY_DEFAULT {}
+#   Apply default value for operators to generate or select mutants.
+#   date: 04/06/96
+#   last update:  05/28/96, 11/11/96
+#------------------------------------------------------------------------------#
+
+proc Apply_Default {class operation} {
+   global in;                      # % default
+   global group1_n group2_n;       # % of mutation operator to generate
+   global group1_m group2_m;       # Number of generated mutants
+   global group1_u group2_u;       # NOT_USED, if not used and USED, if used
+   global group1_s group2_s;       # % of mutation operator to select
+   global NGROUP1 NGROUP2;         # Number operators for class
+   global USED NOT_USED
+
+   set i 1
+
+   switch -exact $class {
+      GROUP1 { 
+         while {$i <= $NGROUP1} {;         # Class Group 1
+
+            # if operation is generation of mutants
+            if {[string compare $operation GENERATE] == 0} {
+               if {$group1_u($i) == $NOT_USED} {; # if operator was not used
+                  set group1_n($i) $in(def_n)
+                  set group1_m($i) $in(def_m)
+               }
+            } elseif {[string compare $operation SELECT] == 0} {
+               set group1_s($i) $in(def_s)
+            }
+            incr i
+         }
+      }
+      GROUP2 { 
+         while {$i <= $NGROUP2} {;         # Class Group 2
+
+            # if operation id generation od mutants
+            if {[string compare $operation GENERATE] == 0} {
+               if {$group2_u($i) == $NOT_USED} {; # if operator was not used
+                  set group2_n($i) $in(def_n)
+                  set group2_m($i) $in(def_m)
+               }
+            } elseif {[string compare $operation SELECT] == 0} {
+               set group2_s($i) $in(def_s)
+            }
+            incr i
+         }   
+      }
+   }
+   return
+}

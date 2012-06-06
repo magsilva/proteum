@@ -1,0 +1,10 @@
+#!/bin/csh  
+# Script para criar binario proteumIM
+
+if (! ( -d proteumIM2.0 ) ) exit
+cd proteumIM2.0
+date >BIN-DATE
+cd ..
+
+tar cvfz proIM20-bin.tgz proteumIM2.0/*/bin 
+

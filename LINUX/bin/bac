@@ -1,0 +1,17 @@
+#!/bin/csh  
+# Script para backup do proteumIM
+
+if (! ( -d proteumIM2.0 ) ) exit
+cd proteumIM2.0
+date >BACKUP-DATE
+cd ..
+
+tar cvf proteumIM2.0.tar proteumIM2.0/Makefile proteumIM2.0/BACKUP-DATE 
+tar rvf proteumIM2.0.tar proteumIM2.0/*/*.[ch]
+tar rvf proteumIM2.0.tar proteumIM2.0/*/*/*.[ch]
+tar rvf proteumIM2.0.tar proteumIM2.0/*/bin/ccc proteumIM2.0/*/bin/clean  proteumIM2.0/*/bin/proteuIMcpp proteumIM2.0/*/bin/bac  proteumIM2.0/*/bin/makezip proteumIM2.0/*/bin/interface proteumIM2.0/*/bin/proteumim
+
+
+gzip proteumIM2.0.tar
+mv proteumIM2.0.tar.gz proIM20.tgz
+
