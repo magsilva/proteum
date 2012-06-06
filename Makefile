@@ -542,23 +542,23 @@ $(OBJ)/bglob.o: $(BTREE)/bglob.c
 	$(CC) $(CFLAGS) $(BTREE)/bglob.c -o $(OBJ)/bglob.o
 
 clean:
-	rm -r LINUX/obj/*
-	rm LINUX/bin/check-equiv  
-	rm LINUX/bin/headtail  
-	rm LINUX/bin/list-good  
-	rm LINUX/bin/muta-view  
-	rm LINUX/bin/recinput  
-	rm LINUX/bin/tcase
-	rm LINUX/bin/exemuta      
-	rm LINUX/bin/instrum   
-	rm LINUX/bin/muta       
-	rm LINUX/bin/opmuta     
-	rm LINUX/bin/report    
-	rm LINUX/bin/tcase-add
-	rm LINUX/bin/extimout     
-	rm LINUX/bin/li
-	rm LINUX/bin/muta-gen   
-	rm LINUX/bin/pteste     
-	rm LINUX/bin/splitarg  
-	rm LINUX/bin/test-new
+	rm -f $(OS)/obj/*
+	rm -f $(OS)/bin/check-equiv  
+	rm -f $(OS)/bin/headtail  
+	rm -f $(OS)/bin/list-good  
+	rm -f $(OS)/bin/muta-view  
+	rm -f $(OS)/bin/recinput  
+	rm -f $(OS)/bin/tcase
+	rm -f $(OS)/bin/exemuta      
+	rm -f $(OS)/bin/instrum   
+	rm -f $(OS)/bin/muta       
+	rm -f $(OS)/bin/opmuta     
+	rm -f $(OS)/bin/report    
+	rm -f $(OS)/bin/tcase-add
+	rm -f $(OS)/bin/extimout     
+	rm -f $(OS)/bin/li
+	rm -f $(OS)/bin/muta-gen   
+	rm -f $(OS)/bin/pteste     
+	rm -f $(OS)/bin/splitarg  
+	rm -f $(OS)/bin/test-new
 
