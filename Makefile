@@ -541,4 +541,24 @@ $(OBJ)/btlib.o: $(BTREE)/btlib.c $(BTREE)/btree.h
 $(OBJ)/bglob.o: $(BTREE)/bglob.c 
 	$(CC) $(CFLAGS) $(BTREE)/bglob.c -o $(OBJ)/bglob.o
 
+clean:
+	rm -r LINUX/obj/*
+	rm LINUX/bin/check-equiv  
+	rm LINUX/bin/headtail  
+	rm LINUX/bin/list-good  
+	rm LINUX/bin/muta-view  
+	rm LINUX/bin/recinput  
+	rm LINUX/bin/tcase
+	rm LINUX/bin/exemuta      
+	rm LINUX/bin/instrum   
+	rm LINUX/bin/muta       
+	rm LINUX/bin/opmuta     
+	rm LINUX/bin/report    
+	rm LINUX/bin/tcase-add
+	rm LINUX/bin/extimout     
+	rm LINUX/bin/li
+	rm LINUX/bin/muta-gen   
+	rm LINUX/bin/pteste     
+	rm LINUX/bin/splitarg  
+	rm LINUX/bin/test-new
 
