@@ -1,0 +1,22 @@
+ --- NO LINUX ----
+
+
+--- COLOCAR PROTEUM NO PATH ---
+
+unzip Proteum-bin.zip
+
+export PATH="$PATH:/dir1/dir2 ... /bin"
+
+export PROTEUMIMHOME=/dir1/dir2 ... /bin
+
+--- COMPILAR Cal.c ---
+exemplo=>
+
+gcc -o Cal Cal.c
+
+
+--- RODAR PROTEUM ---
+
+proteumim &  
+
+ 
