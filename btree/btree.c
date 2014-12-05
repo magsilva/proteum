@@ -18,11 +18,15 @@
 */
 
 
-#include	<stdlib.h>
-#include	<lib/gerais.h>
+#include <stdlib.h>
+#include <lib/gerais.h>
  
-#include	"btree.h"
+#include "btree.h"
+#include "btlib.h"
  
+int btree_errno = 0;
+
+long	bufpage[PAGESIZE/sizeof(long)];
 
 int     find_page0(FILE *);
 int	write_page(BTREE *, void *);
@@ -35,248 +39,246 @@ long	address_of(BTREE *, void *);
 int	delete_key(BTREE *, long, KEY *); 
 int	seq_key(BTREE *, long, int , KEY *, int *);
 
- 
-long	bufpage[PAGESIZE/sizeof(long)];
 
-BTREE	*BTREE_create(char *dfile, char *ifile, int keysize, 
-		     int (*cmp_key)(), void (* print_key)())
+BTREE *
+BTREE_create(char *dfile, char *ifile, int keysize,  int (*cmp_key)(), void (* print_key)())
 {
-BTREE	*p;
-long	t;
-int	k;
-PAGE_ZERO *pz;
+	BTREE	*p;
+	long	t;
+	int	k;
+	PAGE_ZERO *pz;
 
-   p = (BTREE *) malloc(sizeof(BTREE));
-   if (p == NULL)
-   {
-	btree_errno = MEMORY;
-	return NULL;
-   }
-
-   memset(p, 0, sizeof(*p));
-
-   p->datafile = fopen(dfile, "r+");
-   if (p->datafile == NULL)
-   {
-   	p->datafile = fopen(dfile, "w+");
-	if (p->datafile == NULL)
-	{
-	   btree_errno = DATA_WRITE;
-	   l1:
-	   free(p);
-	   return NULL;
+	p = (BTREE *) malloc(sizeof(BTREE));
+	if (p == NULL) {
+		btree_errno = MEMORY;
+		return NULL;
 	}
-   }
+	memset(p, 0, sizeof(*p));
 
-   if (ifile == NULL)
-	p->indfile = p->datafile;
-   else
-   p->indfile = fopen(ifile, "r+");
-   if (p->indfile == NULL)
-   {
-   	p->indfile = fopen(ifile, "w+");
-	if (p->indfile == NULL)
-	{
-	   btree_errno = IND_WRITE;
-	   l2:
-	   fclose(p->datafile);
-	   goto l1;
+	p->datafile = fopen(dfile, "r+");
+	if (p->datafile == NULL) {
+		p->datafile = fopen(dfile, "w+");
+		if (p->datafile == NULL) {
+			btree_errno = DATA_WRITE;
+			goto l1;
+		}
 	}
-   }
 
-   fseek(p->indfile, 0, SEEK_END);
-   t = ftell(p->indfile);
+	if (ifile == NULL) {
+		p->indfile = p->datafile;
+	} else {
+		p->indfile = fopen(ifile, "r+");
+		if (p->indfile == NULL) {
+			p->indfile = fopen(ifile, "w+");
+			if (p->indfile == NULL) {
+				btree_errno = IND_WRITE;
+				goto l2;
+			}
+   		}
+	}
 
-   while (t % PAGESIZE != 0)
-   {
-	fprintf(p->indfile, "%c", DUMMY_CHAR);
-	t++;
-   }
+	fseek(p->indfile, 0, SEEK_END);
+	t = ftell(p->indfile);
 
-   p->pz = t;
-   p->root = BTREE_NULL;
-   p->realkeysize = keysize;
-   p->keysize = (keysize / sizeof(void *) + 1) * sizeof(void *);
-   p->totkeys = 0;
-   pz = (PAGE_ZERO *) bufpage;
-   pz->label = BTREE_LABEL;
-   fwrite(pz, PAGESIZE, 1, p->indfile);
+	while (t % PAGESIZE != 0) {
+		fprintf(p->indfile, "%c", DUMMY_CHAR);
+		t++;
+	}
+
+	p->pz = t;
+	p->root = BTREE_NULL;
+	p->realkeysize = keysize;
+	p->keysize = (keysize / sizeof(void *) + 1) * sizeof(void *);
+	p->totkeys = 0;
+
+	pz = (PAGE_ZERO *) bufpage;
+	pz->label = BTREE_LABEL;
+	fwrite(pz, PAGESIZE, 1, p->indfile);
   
-   if (write_page_zero(p) < 0)
-   {
-	fclose(p->indfile);
-	goto l2;
-   }
+	if (write_page_zero(p) < 0) {
+		fclose(p->indfile);
+		goto l2;
+	}
 
-   k = PAGESIZE - sizeof(PAGE_ADDRESS);
-
-   p->order = (k / p->keysize) / 2 * 2;
-
+	k = PAGESIZE - sizeof(PAGE_ADDRESS);
+	p->order = (k / p->keysize) / 2 * 2;
 #ifdef DEBUG
-   p->order = 4;
+	p->order = 4;
 #endif
 
-   if (p->order > MAXKEYS)
-	p->order = MAXKEYS;
+	if (p->order > MAXKEYS) {
+		p->order = MAXKEYS;
+	}
+	p->compare_key = cmp_key;
+	p->print_key = print_key;
 
-   p->compare_key = cmp_key;
-   p->print_key = print_key;
+	return p;
 
-   return p;
+l2:
+	fclose(p->datafile);
+	goto l1;
+l1:
+	free(p);
+	return NULL;
 }
 
 
 
 	   
-void	BTREE_close(BTREE *bt)
+void
+BTREE_close(BTREE *bt)
 {
-int	i;
+	int	i;
+	
+	if (bt == NULL) {
+		return;
+	}
+	write_page_zero(bt);
 
-   if (bt == NULL)
-	return;
+	fclose(bt->datafile);
+	if (bt->datafile != bt->indfile) {
+		fclose(bt->indfile);
+	}
+	for (i = 0; i < NPAGEPOOL; i++) {
+		if (bt->pool[i].buffer != NULL) {
+			free(bt->pool[i].buffer);
+		}
+	}
 
-   write_page_zero(bt);
-
-   fclose(bt->datafile);
-   if (bt->datafile != bt->indfile)
-	fclose(bt->indfile);
-   for (i = 0; i < NPAGEPOOL; i++)
-   {
-	if (bt->pool[i].buffer != NULL)
-	   free(bt->pool[i].buffer);
-   }
-
-   free(bt);
+	free(bt);
 }
 
 
-BTREE   *BTREE_open(char *dfile, char *ifile, int keysize,
-                     int (*cmp_key)(), void (* print_key)())
+BTREE *
+BTREE_open(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* print_key)())
 {
-BTREE   *p;
-int     k;
-PAGE_ZERO *pz;
+	BTREE   *p;
+	int     k;
+	PAGE_ZERO *pz;
 
-   p = (BTREE *) malloc(sizeof(BTREE));
-   if (p == NULL)
-   {
-	btree_errno = MEMORY;
-        return NULL;
-   }
+	p = (BTREE *) malloc(sizeof(BTREE));
+	if (p == NULL) {
+		btree_errno = MEMORY;
+        	return NULL;
+	}
 
-   memset(p, 0, sizeof(*p));
+	memset(p, 0, sizeof(*p));
 
-   p->datafile = fopen(dfile, "r+");
-   if (p->datafile == NULL)
-   {
-	   btree_errno = DATA_READ;
-           l1:
-           free(p);
-	   return NULL;
-   }
+	p->datafile = fopen(dfile, "r+");
+	if (p->datafile == NULL) {
+		btree_errno = DATA_READ;
+		goto l1;
+       	}
 
-   if (ifile == NULL)
-        p->indfile = p->datafile;
-   else
-   p->indfile = fopen(ifile, "r+");
-   if (p->indfile == NULL)
-   {
-           btree_errno = IND_READ;
-           l2:
-           fclose(p->datafile);
-           goto l1;
-   }
+	if (ifile == NULL) {
+		p->indfile = p->datafile;
+	} else {
+		p->indfile = fopen(ifile, "r+");
+		if (p->indfile == NULL) {
+           		btree_errno = IND_READ;
+			goto l2;
+		}
+		if (find_page0(p->indfile) < 0) {
+			goto l3;
+		}
+   	}
+	p->pz = ftell(p->indfile);
 
-   if (find_page0(p->indfile) < 0)
-   {
-	l3:
-	fclose(p->indfile);
-	goto l2;
-   }
-   p->pz = ftell(p->indfile);
+	if (get_page_zero(p) < 0) {
+		goto l3;
+	}
 
-   if (get_page_zero(p) < 0)
-	goto l3;
-
-   k = PAGESIZE - sizeof(PAGE_ADDRESS);
-
-   p->realkeysize = keysize;
-   p->keysize = (keysize / sizeof(void *) + 1) * sizeof(void *);
-   p->order = (k / p->keysize) / 2 * 2;
+	k = PAGESIZE - sizeof(PAGE_ADDRESS);
+	p->realkeysize = keysize;
+	p->keysize = (keysize / sizeof(void *) + 1) * sizeof(void *);
+	p->order = (k / p->keysize) / 2 * 2;
 
 #ifdef DEBUG
-   p->order = 4;
+	p->order = 4;
 #endif
 
-   if (p->order > MAXKEYS)
-        p->order = MAXKEYS;
+	if (p->order > MAXKEYS) {
+		p->order = MAXKEYS;
+	}
+	p->compare_key = cmp_key;
+	p->print_key = print_key;
 
-   p->compare_key = cmp_key;
-   p->print_key = print_key;
+	return p;
 
-   return p;
+l3:
+	fclose(p->indfile);
+	goto l2;
+l2:
+	fclose(p->datafile);
+	goto l1;
+l1:
+	free(p);
+	return NULL;
 }
 
 
 
-int	BTREE_insert_key(BTREE *bt, KEY *key, long address, int size)
-{
-void	*root, *new_root;
-KEY	*hkey;
-ITEM	u;
-PAGE_ADDRESS	*p;
-KEY	*pk;
+int
+BTREE_insert_key(BTREE *bt, KEY *key, long address, int size) {
+	void	*root, *new_root;
+	KEY	*hkey;
+	ITEM	u;
+	PAGE_ADDRESS	*p;
+	KEY	*pk;
 
-   u.address = address;
-   u.size = size;
+	u.address = address;
+	u.size = size;
 
-   if (insert_key(bt, bt->root, key, &u, &hkey) < 0)
-	return -1;
+	if (insert_key(bt, bt->root, key, &u, &hkey) < 0) {
+		return -1;
+	}
 
-   if (hkey != NULL)
-   {
-	/* insert in the root */
-	new_root = new_page(bt);
-	if (new_root == NULL)
-	   return -1;
+	if (hkey != NULL) {
+		/* insert in the root */
+		new_root = new_page(bt);
+		if (new_root == NULL) {
+			return -1;
+		}
 
-	p = (PAGE_ADDRESS *) new_root;
-	pk = nth_key(bt, p, 0);
+		p = (PAGE_ADDRESS *) new_root;
+		pk = nth_key(bt, p, 0);
 
-	p->label = BTREE_LABEL;
-	p->nkeys = 1;
-	p->next0 = bt->root;
-	p->s[0] = u;
-	p->child0 = bt->totkeys - u.child;
-	memcpy(pk, hkey, bt->realkeysize);
-	bt->root = address_of(bt, p);
-	if (write_page(bt, p) < 0 < 0)
-	 	return -1;
-   }
+		p->label = BTREE_LABEL;
+		p->nkeys = 1;
+		p->next0 = bt->root;
+		p->s[0] = u;
+		p->child0 = bt->totkeys - u.child;
+		memcpy(pk, hkey, bt->realkeysize);
+		bt->root = address_of(bt, p);
+		if (write_page(bt, p) < 0) {
+		 	return -1;
+		}
+	}
 
-   bt->totkeys++;
-   if (write_page_zero(bt)  < 0)
-	return -1;
-   return 0;
+	bt->totkeys++;
+	if (write_page_zero(bt)  < 0) {
+		return -1;
+	}
+	return 0;
 }
 
 
-int	BTREE_insert_data(BTREE *bt, KEY *key, void *reg, int size)
+int
+BTREE_insert_data(BTREE *bt, KEY *key, void *reg, int size)
 {
-long	l;
+	long	l;
 
-   l = new_reg(bt, size);
-   if (l  < 0)
-  	return -1;
+	l = new_reg(bt, size);
+	if (l  < 0) {
+	  	return -1;
+	}
 
-   fseek(bt->datafile, l, SEEK_SET);
-   if (fwrite(reg, size, 1, bt->datafile) != 1)
-   {
-	btree_errno = DATA_WRITE;
-	return -1;
-   }
-
-   return BTREE_insert_key(bt, key, l, size);
+	fseek(bt->datafile, l, SEEK_SET);
+	if (fwrite(reg, size, 1, bt->datafile) != 1) {
+		btree_errno = DATA_WRITE;
+		return -1;
+	}
+	return BTREE_insert_key(bt, key, l, size);
 }
 
 
@@ -418,7 +420,8 @@ int     i, k;
 
 
 
-void    BTREE_print_nth(BTREE *bt)
+void
+BTREE_print_nth(BTREE *bt)
 {
 int	i;
 long	l;
@@ -448,45 +451,43 @@ int     BTREE_delete_key(BTREE *bt, KEY *key)
 }
 
 
-int     BTREE_delete_nth_key(BTREE *bt, int n)
+int
+BTREE_delete_nth_key(BTREE *bt, int n)
 {
-KEY	*key;
-ITEM	u;
-int	k;
+	KEY *key;
+	ITEM u;
+	int k;
 
-    if (bt->totkeys < n)
-    {
-        btree_errno = REG_NUMBER;
-        return -1;
-    }
+	if (bt->totkeys < n) {
+		btree_errno = REG_NUMBER;
+		return -1;
+	}
 
-    key = (KEY *) malloc(bt->keysize);
-    if (key == NULL)
-    {
-	btree_errno = MEMORY;
- 	return -1;
-    }
+	key = (KEY *) malloc(bt->keysize);
+	if (key == NULL) {
+		btree_errno = MEMORY;
+		return -1;
+	}
 
-    if (get_nth(bt, bt->root, n, key, &u) < 0)
-    {
+	if (get_nth(bt, bt->root, n, key, &u) < 0) {
+		free(key);
+        	return -1;
+	}
+
+	if (u.size < 0) {
+		free(key);
+		btree_errno = DEL_KEY;
+		return -1;
+	}
+
+ 	k = BTREE_delete_key(bt, key);
 	free(key);
-        return -1;
-    }
-
-    if (u.size < 0)
-    {
-	free(key);
-	btree_errno = DEL_KEY;
-	return -1;
-    }
-
-    k = BTREE_delete_key(bt, key);
-    free(key);
-    return k;
+	return k;
 }
 
 
-int	BTREE_seq_key(BTREE *bt, KEY *key, int *n)
+int
+BTREE_seq_key(BTREE *bt, KEY *key, int *n)
 {
    return seq_key(bt, bt->root, 0, key, n);
 }

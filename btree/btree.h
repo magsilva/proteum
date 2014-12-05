@@ -17,31 +17,25 @@
 # 
 */
 
-
-#include	<stdio.h>
-
 #ifndef		__BTREE__
-
 #define		__BTREE__
 
 #define		BTREE_NULL	(long) 0
-
-#define		PAGESIZE	1024
 
 #define		MAXKEYS		50
 
 #define		BTREE_LABEL	0x41762345
 
+#define         PAGESIZE        1024
+
 #define		DUMMY_CHAR	'd'
 
 #define		NPAGEPOOL	16
 
-typedef	void 	KEY;
-
 /*------------------ Error codes ---------------*/
 #define		DATA_WRITE	1 /* writing data file */
 #define		DATA_READ	2 /* reading data file */
-#define		INTERN_MIST	3 /*intern error */
+#define		INTERN_MIST	3 /* intern error */
 #define		REG_NUMBER	4 /* invalid reg. number */
 #define		NON_KEY		5 /* non existing key */
 #define		INV_IND		6 /* invalid index file */
@@ -52,59 +46,58 @@ typedef	void 	KEY;
 #define		DEL_KEY		11 /* key already deleted */
 
 /*------------------- Macros --------------------------*/
-#define		BTREE_nkeys(bt)	(bt->totkeys)
+#define		BTREE_nkeys(bt)		(bt->totkeys)
 #define         nth_key(bt,p,n)         (((void*)(p+1))+(bt->keysize)*(n))
 
 
-extern int	btree_errno;
+extern int btree_errno;
+
+typedef	void KEY;
 
 typedef struct {
-	long		next;
-	long		address;
-	int		size;
-	int		child;
-		} ITEM;
-
-
-typedef struct {
-	long		label;
-	long		next0;
-	int		nkeys;
-	int		child0;
-	ITEM		s[MAXKEYS];
-		} PAGE_ADDRESS;
+	long next;
+	long address;
+	int size;
+	int child;
+} ITEM;
 
 typedef struct {
-	long		label;
-	long		root;
-	int		totkeys;
-		} PAGE_ZERO;
+	long label;
+	long next0;
+	int nkeys;
+	int child0;
+	ITEM s[MAXKEYS];
+} PAGE_ADDRESS;
 
 typedef struct {
-	FILE		*datafile;
-	FILE		*indfile;
-	long		pz;
-	long		root;
-	int		keysize;
-	int		realkeysize;
-	int		order;
-	int		totkeys;
-	int		(* compare_key)();
-	void		(* print_key)();
+	long label;
+	long root;
+	int totkeys;
+} PAGE_ZERO;
+
+typedef struct {
+	FILE *datafile;
+	FILE *indfile;
+	long pz;
+	long root;
+	int keysize;
+	int realkeysize;
+	int order;
+	int totkeys;
+	int (* compare_key)();
+	void (* print_key)();
 	struct {
-		long		pageaddress;
-		void		*buffer;
-		} pool[NPAGEPOOL];
-	} BTREE;
+		long pageaddress;
+		void *buffer;
+	} pool[NPAGEPOOL];
+} BTREE;
 
 
-BTREE	*BTREE_create(char *dfile, char *ifile, int keysize, 
-		     int (*cmp_key)(), void (* print_key)());
+BTREE *BTREE_create(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* print_key)());
 
-void	BTREE_close(BTREE *bt);
+void BTREE_close(BTREE *bt);
 
-BTREE   *BTREE_open(char *dfile, char *ifile, int keysize,
-                     int (*cmp_key)(), void (* print_key)());
+BTREE   *BTREE_open(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* print_key)());
 
 int	BTREE_insert_key(BTREE *, KEY *, long , int);
 
