@@ -26,7 +26,7 @@
 #include	<li/lib/li.h>
 #include	<muta/lib/muta.h>
 #include	<tcase/lib/tcase.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 #define		MAXINTEGER	(((unsigned) -1) >> 1)
 #define		DEFAULT_MENOSV   ""

@@ -28,7 +28,7 @@ Este modulo marca mutantes como ativos/inativos
 #include	<li/lib/li.h>
 #include	<muta/lib/muta.h>
 #include	<tcase/lib/tcase.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 
 

@@ -5,7 +5,7 @@ PROTEU = .
 
 LIB = $(PROTEU)/lib
 
-PTESTE = $(PROTEU)/pteste/lib
+PTESTE = $(PROTEU)/pteste
 
 TCASE = $(PROTEU)/tcase/lib
 
@@ -208,8 +208,8 @@ $(OBJ)/libtcase.o: $(INCLUDEFILE) $(TCASE)/arqtcase.c $(TCASE)/arqio.c \
 	$(LD) $(LFLAGS) $(OBJ)/arqio.o $(OBJ)/arqtcase.o -o $(OBJ)/libtcase.o \
 	$(OBJ)/log.o $(OBJ)/tcase_ex.o $(OBJ)/recinput.o $(OBJ)/playinput.o
 
-pteste: $(INCLUDEFILE) $(PTESTE)/../mainptes.c lib $(OBJ)/libpteste.o lib
-	$(CC) $(CFLAGS) $(PTESTE)/../mainptes.c -o $(OBJ)/mainptes.o ;\
+pteste: $(INCLUDEFILE) $(PTESTE)/mainptes.c lib $(OBJ)/libpteste.o lib
+	$(CC) $(CFLAGS) $(PTESTE)/mainptes.c -o $(OBJ)/mainptes.o ;\
 	$(CC) $(CLFLAGS) $(OBJ)/mainptes.o $(OBJ)/libgerais.o \
 	$(OBJ)/libpteste.o -o $(BIN)/pteste
 

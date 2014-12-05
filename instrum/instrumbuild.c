@@ -30,7 +30,7 @@
 #include	"lib/gerais.h"
 #include	"tcase/lib/tcase.h"
 #include	"li/lib/li.h"
-#include	"pteste/lib/pteste.h"
+#include	"pteste/pteste.h"
 
 CAB_PTESTE	pteste_cab;	/* estrutura onde carregar arq. teste */
 
