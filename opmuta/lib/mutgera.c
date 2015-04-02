@@ -461,18 +461,18 @@ not included in the global/local set)
 **************************************************************************/
 int	e_local(char *x)
 {
-   return (var_set_inn(&setL, x) >= 0);
+   return (var_set_has(&setL, x) >= 0);
 }
 
 
 int	e_ext(char *x)
 {
-   return (var_set_inn(&setE, x) >= 0 && ! e_local(x));
+   return (var_set_has(&setE, x) >= 0 && ! e_local(x));
 }
 
 int	e_interface(char *x)
 {
-   return (( var_set_inn(&setP, x) >= 0 || var_set_inn(&setG, x) >= 0 ) && 
+   return (( var_set_has(&setP, x) >= 0 || var_set_has(&setG, x) >= 0 ) && 
 	   ! e_local(x));
 }
 

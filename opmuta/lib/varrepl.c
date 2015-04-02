@@ -92,7 +92,7 @@ char	*var_name;
 		   n++;
 		   continue;
 		}
-	   	seq = var_set_inn(r, q->nome);
+	   	seq = var_set_has(r, q->nome);
 		expre_substitui(&expre_pos, i, q->nome, VARIAVEL);
 
                 if (! expre_valida(&expre_pos) || 
@@ -176,7 +176,7 @@ char    *var_name;
                    n++;
                    continue;
                 }
-                seq = var_set_inn(r, q->nome);
+                seq = var_set_has(r, q->nome);
                 expre_substitui(&expre_pos, i, q->nome, VARIAVEL);
 
                 if (! expre_valida(&expre_pos) || 

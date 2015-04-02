@@ -92,7 +92,7 @@ char	*var_name;
 		   n++;
 		   continue;
 		}
-	   	seq = var_set_inn(r, q->nome);
+	   	seq = var_set_has(r, q->nome);
 		expre_substitui(&expre_pos, i, q->nome, VARIAVEL);
 
 		if (q->storage.f_typedef) /* is a fake */
@@ -199,7 +199,7 @@ char    *var_name;
 		   n++;
 		   continue;
 		}
-	   	seq = var_set_inn(r, q->nome);
+	   	seq = var_set_has(r, q->nome);
 		expre_substitui(&expre_pos, i, q->nome, VARIAVEL);
 
 		if (q->storage.f_typedef) /* is a fake */

@@ -146,35 +146,40 @@
 
 #define		SUFIXO_NLI	".nli"
 #define		SUFIXO_GFC	".gfc"
+
+
+#define MAX_SYMBOL_SIZE 256
  
-/**************************************************************************/
-/*simbolo da LI */
+/**
+ * Symbol of the intermediate language (LI)
+ */
 typedef	struct  {
-			char	simbolo[256];
-			int	no;
-			int	comprimento;
-			int	linha;
-			long	inicio;
-		   } LI_SIMBOLO;
+	char simbolo[MAX_SYMBOL_SIZE];
+	int	no;
+	int	comprimento;
+	int	linha;
+	long	inicio;
+} LI_SIMBOLO;
+
+
 
 #define		MAX_LIN_LI	64536
 
 #define		TAM_MAX_EXPR	4*4096	/* tamanho maximo de uma expressao */
 
 
-
-/************************************************************************/
-/* set of simbols (variables) */
-
+/**
+ * Set of symbols (variables)
+ */
 typedef struct {
-		SIMBOLO		**vet;
-		int		cont;
-		int		size;
-		} VAR_SET;
+	SIMBOLO	**vet;
+	int cont;
+	int size;
+} VAR_SET;
 
 
 /************************************************************************
-macros par averificacao dos tkens da LI					*/
+macros para verificacao dos tokens da LI					*/
 
 #define	e_abre(x)	(strcmp(x.simbolo, "{") == 0)
 

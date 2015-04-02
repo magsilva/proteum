@@ -100,7 +100,7 @@ char    *c;
 	            continue;
                 }
 
-	   	seq = var_set_inn(&r, q->nome);
+	   	seq = var_set_has(&r, q->nome);
 		expre_substitui(&expre_pos, i, q->nome, CAMPO);
 
 		if (expre_valida(&expre_pos))
