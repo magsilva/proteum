@@ -20,9 +20,7 @@
 
 #include	<string.h>
 
-#include	<lib/gerais.h>
-#include	<li/lib/li.h>
-#include	"lib/pteste.h"
+#include	"pteste.h"
 
 
 int	Menosl,
@@ -42,41 +40,31 @@ CAB_PTESTE	pteste_cab;
 
 
 
-
-main(argc, argv)
-int	argc;
-char	*argv[];
+int 
+main(int argc, char *argv[])
 {
-   if (argc < 3)
-   {
-	msg("Missing parameters");
-	exit(1);
-   }
-   if (*argv[argc-1] == '-')
-   {
-	msg("Invalid Parameter");
-	exit(1);
-   }
+	if (argc < 3) {
+		msg("Missing parameters");
+		exit(1);
+	}
+
+	if (*argv[argc-1] == '-') {
+		msg("Invalid Parameter");
+		exit(1);
+	}
 
 
-   if (strcmp(argv[1], "-create") == 0)
-   {
-	argv[1] = "";
-	CreatePteste(argc, argv);
-   }
-   else
-   if (strcmp(argv[1], "-l") == 0)
-   {
-	argv[1] = "";
-	ListPteste(argc, argv);
-   }
-   else
-   {
-	msg("Invalid Parameters");
-        exit(1);
-  }
-   return 0;
-
+	if (strcmp(argv[1], "-create") == 0) {
+		argv[1] = "";
+		CreatePteste(argc, argv);
+	} else if (strcmp(argv[1], "-l") == 0) {
+		argv[1] = "";
+		ListPteste(argc, argv);
+	} else {
+		msg("Invalid Parameters");
+        	exit(1);
+	}
+	return 0;
 }
 
 

@@ -17,6 +17,8 @@
 # 
 */
 
+#ifndef         __PTEST__
+#define         __PTEST__
 
 /*****************************************************************************
 				P T E S T E . H
@@ -27,6 +29,9 @@ Autor: Delamaro
 Data: 02-09-94
 Documentacao: 24-10-94 (Mirian)
 *****************************************************************************/
+
+#include <lib/gerais.h>
+#include <li/lib/li.h>
 
 
 #define		SUFIXO_PTESTE	".PTM" /* extensao padrao de arquivo de teste */
@@ -80,7 +85,11 @@ typedef struct {
 				/*programa serao testadas */
 	char	funcoes[1024];	/* buffer que contem o nome das funcoes do */
 				/* programa que devem ser testadas */
-		} CAB_PTESTE;
+} CAB_PTESTE;
 
 
+int cria_arquivo_teste(char * dir, char *nome, char *fonte, char *exec, char *comp, int tipo, int anomalias, char *funcoes, CAB_PTESTE *cab);
 
+int carrega_arquivo_teste(char *dir, char *nome, CAB_PTESTE * cab);
+
+#endif

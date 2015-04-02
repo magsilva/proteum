@@ -86,13 +86,10 @@ FILE	*popen();	/* define popen if stdio.h doesn't */
 
 /*-------------------- Constantes utilizadas por gerais.c ---------*/
 
-#define		NOME_LENGTH	128	/* tamanho maximo do nome de um arquivo
-					   ou diretorio */
+#define		NOME_LENGTH	250	/* tamanho maximo do nome de um arquivo ou diretorio */
 
 
-#define		OFFSET0		64	/* tamanho do cabecalho de identifica
-					   cao colocado nos arquivos de 
-					    trabalho do proteum */
+#define		OFFSET0		64	/* tamanho do cabecalho de identificacao colocado nos arquivos de trabalho do proteum */
 
 #define		MAXSET		512
 

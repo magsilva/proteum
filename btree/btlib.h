@@ -17,6 +17,31 @@
 # 
 */
 
+#ifndef         __BTLIB__
+#define         __BTLIB__
 
-int	btree_errno = 0;
+#include "btree.h"
+
+extern long bufpage[];
+
+int     find_page0(FILE *);
+int	write_page(BTREE *, void *);
+int     write_page_zero(BTREE *);
+void	*get_root(BTREE *);
+void    *new_page(BTREE *);
+long	new_reg(BTREE *, int);
+int     insert_key(BTREE *, long , KEY *, ITEM *, KEY **);
+long	address_of(BTREE *, void *);
+int	delete_key(BTREE *, long, KEY *); 
+int	seq_key(BTREE *, long, int , KEY *, int *);
+
+void    reloca_pool(BTREE *, long);
+void    *buffer_of(BTREE *, long);
+long    address_of(BTREE *, void *);
+int     page_of(BTREE *, long);
+void    *get_root(BTREE *);
+void    *get_page(BTREE *, long);
+
+#endif
+
 

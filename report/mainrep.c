@@ -23,7 +23,7 @@
 #include	<lib/gerais.h>
 #include	<tcase/lib/tcase.h>
 #include	<muta/lib/muta.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 
 #define		L_DEFAULT_TCASE 	17 /* nivel default p/ C.T */

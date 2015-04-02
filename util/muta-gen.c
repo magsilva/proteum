@@ -22,7 +22,7 @@
 #include 	<stdio.h>
 
 #include	<lib/gerais.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 
 /*------------------------------------------------------------------------

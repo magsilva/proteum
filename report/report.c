@@ -21,7 +21,7 @@
 #include	<lib/gerais.h>
 #include	<tcase/lib/tcase.h>
 #include	<muta/lib/muta.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 
 /*------------------------------------------------------------------------

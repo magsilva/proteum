@@ -5,7 +5,7 @@ PROTEU = .
 
 LIB = $(PROTEU)/lib
 
-PTESTE = $(PROTEU)/pteste/lib
+PTESTE = $(PROTEU)/pteste
 
 TCASE = $(PROTEU)/tcase/lib
 
@@ -208,8 +208,8 @@ $(OBJ)/libtcase.o: $(INCLUDEFILE) $(TCASE)/arqtcase.c $(TCASE)/arqio.c \
 	$(LD) $(LFLAGS) $(OBJ)/arqio.o $(OBJ)/arqtcase.o -o $(OBJ)/libtcase.o \
 	$(OBJ)/log.o $(OBJ)/tcase_ex.o $(OBJ)/recinput.o $(OBJ)/playinput.o
 
-pteste: $(INCLUDEFILE) $(PTESTE)/../mainptes.c lib $(OBJ)/libpteste.o lib
-	$(CC) $(CFLAGS) $(PTESTE)/../mainptes.c -o $(OBJ)/mainptes.o ;\
+pteste: $(INCLUDEFILE) $(PTESTE)/mainptes.c lib $(OBJ)/libpteste.o lib
+	$(CC) $(CFLAGS) $(PTESTE)/mainptes.c -o $(OBJ)/mainptes.o ;\
 	$(CC) $(CLFLAGS) $(OBJ)/mainptes.o $(OBJ)/libgerais.o \
 	$(OBJ)/libpteste.o -o $(BIN)/pteste
 
@@ -528,18 +528,14 @@ recinput: $(MISC)/recinput.c $(INCLUDEFILE) $(OBJ)/libmuta.o
 extimout: $(MISC)/extimout.c  
 	$(CC) $(CLFLAGS) $(MISC)/extimout.c  -o $(BIN)/extimout
 
-btree: $(OBJ)/btree.o $(OBJ)/btlib.o $(OBJ)/bglob.o
-	$(LD) $(LFLAGS) $(OBJ)/btree.o $(OBJ)/btlib.o  \
-	$(OBJ)/bglob.o -o $(OBJ)/libbtree.o
+btree: $(OBJ)/btree.o $(OBJ)/btlib.o 
+	$(LD) $(LFLAGS) $(OBJ)/btree.o $(OBJ)/btlib.o -o $(OBJ)/libbtree.o
 
-$(OBJ)/btree.o: $(BTREE)/btree.c $(BTREE)/bglob.c $(BTREE)/btree.h
+$(OBJ)/btree.o: $(BTREE)/btree.c $(BTREE)/btree.h
 	$(CC) $(CFLAGS) $(BTREE)/btree.c -o $(OBJ)/btree.o
 
 $(OBJ)/btlib.o: $(BTREE)/btlib.c $(BTREE)/btree.h
 	$(CC) $(CFLAGS) $(BTREE)/btlib.c -o $(OBJ)/btlib.o
-
-$(OBJ)/bglob.o: $(BTREE)/bglob.c 
-	$(CC) $(CFLAGS) $(BTREE)/bglob.c -o $(OBJ)/bglob.o
 
 clean:
 	rm -f $(OS)/obj/*

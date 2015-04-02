@@ -18,21 +18,14 @@
 */
 
 
-#include	<lib/gerais.h>
+#include <lib/gerais.h>
 
-#include	"btree.h"
+#include "btlib.h"
  
+long bufpage[PAGESIZE/sizeof(long)];
 
-void    reloca_pool(BTREE *, long);
-void	*buffer_of(BTREE *, long);
-long	address_of(BTREE *, void *);
-int	page_of(BTREE *, long);
-void	*get_root(BTREE *);
-void	*get_page(BTREE *, long);
-
-extern long	bufpage[];
-
-int     find_page0(FILE *fp)
+int
+find_page0(FILE *fp)
 {
 long    l;
 

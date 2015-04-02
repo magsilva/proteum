@@ -23,7 +23,7 @@
 #include	<string.h>
 #include	<li/lib/li.h>
 #include	<lib/gerais.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 #include	<muta/lib/muta.h>
  
 

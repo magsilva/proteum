@@ -44,7 +44,7 @@ Este modulo cuida da execucao de cada mutante
 #include	<li/lib/li.h>
 #include	<muta/lib/muta.h>
 #include	<tcase/lib/tcase.h>
-#include	<pteste/lib/pteste.h>
+#include	<pteste/pteste.h>
 
 #define		TAMANHO_BUF	512 /* if this change, change playinput.c */
 
@@ -146,21 +146,16 @@ DWORD	last_tcase;
 	   status = VIVO;
 	   q = r;
 
-/*--------------- Executa o mutante com cada caso de teste---------------*/
+		/*--------------- Executa o mutante com cada caso de teste---------------*/
+		for (j = 1; j <= NTCASE(&HTCase) && (status == VIVO || (status == MORTO && pteste_cab.tipo == T_RESEARCH)); j++) {
+			k = ltofis_tcase(&HTCase, j);
 
-	   for (j = 1; j <= NTCASE(&HTCase) &&
-	       (status == VIVO || (status == MORTO &&
-				     pteste_cab.tipo == T_RESEARCH)); j++)
-	   {
-		k = ltofis_tcase(&HTCase, j);
+			/* Se caso de teste estiver desabilitado ou ja foi executado, nao executa */
+			if (TAB_FIS(&HTCase)[k].desabili || get_bitmap(REG(&HMuta).tcase, k) != NO_EXEC) {
+			           continue;
+			}
 
-/* Se caso de teste estiver desabilitado ou ja foi executado, nao executa */
-
-		if (TAB_FIS(&HTCase)[k].desabili
-		    || get_bitmap(REG(&HMuta).tcase, k) != NO_EXEC)
-		           continue;
-
-		if (q == NULL)
+			if (q == NULL)
 	   	{
 		   if ((p = monta_n_mutante(&HMuta, &pteste_cab, 1,
 						&vet_exec[z1])) == NULL )
@@ -753,9 +748,7 @@ int i, tx, j, k;
 	status = VIVO;
 	status1 = status2 = 0;
 	tx = 0;
-	for (j = 1; j <= NTCASE(&HTCase) && 
-		    (status == VIVO || pteste_cab.tipo == T_RESEARCH); j++)
-	{
+	for (j = 1; j <= NTCASE(&HTCase) && (status == VIVO || pteste_cab.tipo == T_RESEARCH); j++) {
 	   k = ltofis_tcase(&HTCase, j);
 	   if (last_tcase <= TAB_FIS(&HTCase)[k].reg_log)
 		set_bitmap(REG(&HMuta).tcase, k, NO_EXEC);
@@ -786,8 +779,9 @@ int i, tx, j, k;
 	}
 	set_mutante_status(&HMuta, status, status1, status2);
 
-	if (tx > 0 && (status == VIVO || pteste_cab.tipo == T_RESEARCH) )
+	if (tx > 0 && (status == VIVO || pteste_cab.tipo == T_RESEARCH)) {
 	   v[cont++] = *dequal;
+	}
 
 	REG(&HMuta).ultimo_tcase = CONTLOG(&HTCase);	
 	if (rewrite_mutante(&HMuta) == ERRO)
