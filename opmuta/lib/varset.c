@@ -24,29 +24,33 @@
 #define		ADD_SIZE	128
 
 
-void var_set_new(s) /* creates an empty set */
-VAR_SET    *s;
+/**
+ * Create an empty set
+ */
+void
+var_set_new(VAR_SET *s)
 {
    s->cont = 0;
    s->vet = NULL;
    s->size = 0;
 }
 
-int     var_set_add(s, c)
-SIMBOLO    *c;
-VAR_SET    *s;
+/**
+ * Add symbol to set.
+ */
+int
+var_set_add(VAR_SET *s, SIMBOLO *c)
 {
-SIMBOLO **p;
-int     k;
+   SIMBOLO **p;
+   int     k;
 
-   if (s->cont >= s->size)
-   {
-	p = malloc((s->size+ADD_SIZE)*sizeof(*(s->vet)));
-	if (p == NULL)
+   if (s->cont >= s->size) {
+	p = malloc((s->size + ADD_SIZE) * sizeof(*(s->vet)));
+	if (p == NULL) {
 	   return ERRO;
-	if (s->vet)
-	{
-	   memcpy(p, s->vet, s->size*sizeof(*(s->vet)));
+	}
+	if (s->vet != NULL) {
+	   memcpy(p, s->vet, s->size * sizeof(*(s->vet)));
 	   free(s->vet);
 	}
 	s->vet = p;
@@ -58,55 +62,59 @@ int     k;
 }
 
 
-SIMBOLO	*var_set_get(s, k)  /*devolve elemento do conjunto */
-VAR_SET    *s;
-int     k;
+/**
+ * Get symbol at position k from set.
+ */
+SIMBOLO	*
+var_set_get(VAR_SET *s , int  k)
 {
-
    return (k < s->cont) ? s->vet[k] : NULL ;
 }
 
 
-
-int var_set_inn(s, c)
-char    *c;
-VAR_SET    *s;
+/**
+ * Check if set has a given string.
+ */
+int
+var_set_has(VAR_SET *s, char *c)
 {
-SIMBOLO	*p;
-int     i;
+   SIMBOLO *p;
+   int i;
 
-   for (i = 0; i < s->cont; i++)
-   {
+   for (i = 0; i < s->cont; i++) {
         p = var_set_get(s, i);
-        if (p == NULL)
+        if (p == NULL) {
            return  -1;
-        if ( strcmp(p->nome, c) == 0)
+        }
+        if (strcmp(p->nome, c) == 0) {
            break;
+        }
    }
    return (i < s->cont) ? i : -1;
 }
 
-
-void var_set_del(s, k)
-VAR_SET *s;
-int     k;
+/**
+ * Erase element from the set.
+ */
+void
+var_set_del(VAR_SET *s, int k)
 {
-int i;
+	int i;
+	if (k >= s->cont)
+		return;
 
-   if (k >= s->cont)
-     return;
-
-   for (i = k+1; i < s->cont; i++)
-   {
-	s->vet[i-1] = s->vet[i];
-   }
-   s->cont--;
+	for (i = k+1; i < s->cont; i++) {
+		s->vet[i-1] = s->vet[i];
+	}
+	s->cont--;
 }
 
 
-
-
-void    var_set_free(VAR_SET *p)
+/**
+ * Delete set.
+ */
+void
+var_set_free(VAR_SET *p)
 {
    if (p->vet)
         free(p->vet);
@@ -114,18 +122,18 @@ void    var_set_free(VAR_SET *p)
 }
 
 
-int     var_set_dup(VAR_SET *p, VAR_SET *q)
+/**
+ * Duplicate a set.
+ */
+int
+var_set_dup(VAR_SET *p, VAR_SET *q)
 {
-int i;
-SIMBOLO    *c;
+	int i;
+	SIMBOLO    *c;
 
-   var_set_new(q);
-   for (c = var_set_get(p, i=0); c != NULL; c = var_set_get(p, ++i))
-        if (var_set_add(q, c) == ERRO)
-           return ERRO;
-   return OK;
+	var_set_new(q);
+	for (c = var_set_get(p, i=0); c != NULL; c = var_set_get(p, ++i))
+        	if (var_set_add(q, c) == ERRO)
+			return ERRO;
+	return OK;
 }
-
-
-
-

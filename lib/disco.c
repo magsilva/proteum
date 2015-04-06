@@ -212,7 +212,8 @@ FILE	*fp; /* pointer for the file which will be open */
  */
 int fecharq(FILE *fp)
 {
-	for (int i = 0; fp != NULL && i < MAX_ARQ; i++) {
+	int i;
+	for (i = 0; fp != NULL && i < MAX_ARQ; i++) {
 		if (tabarq[i].fp == fp) {
 			fclose(fp);
 			delarq(fp);

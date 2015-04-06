@@ -333,7 +333,7 @@ add_sim_set(VAR_SET *s, SIMBOLO *p)
 	return;
 
    if ( ! e_funcao(p->tipo, p->ptar) && (! p->storage.f_extern) &&
-	(var_set_inn(s, p->nome) < 0))
+	(var_set_has(s, p->nome) < 0))
    {
 	if (var_set_add(s, p) == ERRO)
 	   return;
@@ -367,7 +367,7 @@ SIMBOLO *q;
    for (i = 0; i < var_set_card((&setPF)); i++)
    {
 	q = var_set_get(&setPF,i);
-	if (  var_set_inn(&setLP,q) < 0 )
+	if (  var_set_has(&setLP,q) < 0 )
 	    var_set_add(&setLP, q);
    } 
 }
@@ -407,7 +407,7 @@ SIMBOLO *p;
 	   if (expre_pos.no[i].tipo == VARIAVEL && 
 	       e_ext(NOME((&expre_pos), i)))
 	   {
-		j = var_set_inn(&setE, NOME((&expre_pos), i));
+		j = var_set_has(&setE, NOME((&expre_pos), i));
 		p = var_set_get(&setE, j);
 		var_set_del(&setE, j);
 		var_set_add(&setG, p);

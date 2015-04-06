@@ -78,30 +78,33 @@ parametros:
 	nome: nome do arquivo (sem extensao)
 Autor: Delamaro
 ****************************************************************************/
-carrega_arquivo_tcase(HTCase, dir, nome)
-char	*dir, *nome;
-HAND_TCASE	*HTCase;
+int
+carrega_arquivo_tcase(HAND_TCASE * HTCase, char *dir, char *nome)
 {
+	memset(HTCase, 0, sizeof(*HTCase));
+	/*---------------- cria arquivo E/S e arquivo de casos de teste ----------*/
+	if  ((TFILE(HTCase) = abrearq(dir, nome, SUFIXO_TCASE, 1)) == NULL || (TFILEIO(HTCase) = abrearq(dir, nome, SUFIXO_IO, 1)) == NULL) {
+		printf("\nCould not open file");
+		return ERRO;
+	}
 
-   memset(HTCase, 0, sizeof(*HTCase));
-/*---------------- cria arquivo E/S e arquivo de casos de teste ----------*/
-   if  ((TFILE(HTCase) = abrearq(dir, nome, SUFIXO_TCASE, 1)) == NULL || 
-	(TFILEIO(HTCase) = abrearq(dir, nome, SUFIXO_IO, 1)) == NULL )
-	     return ERRO;
+	if ( checa_ident(TFILE(HTCase), IDENT_TCASE) == ERRO ||	checa_ident(TFILEIO(HTCase), IDENT_IO) == ERRO ) {
+		printf("\nCould not identify file as a test set");
+		return ERRO;
+	}
 
-   if ( checa_ident(TFILE(HTCase), IDENT_TCASE) == ERRO ||
-	checa_ident(TFILEIO(HTCase), IDENT_IO) == ERRO )
-	     return ERRO;
+	/*------------------ Le cabecalhos dos arquivos --------------------------*/
+	if (posiciona(TFILE(HTCase), OFFSET0) == ERRO || posiciona(TFILEIO(HTCase), OFFSET0) == ERRO) {
+		printf("\nCould not read header of test set file");
+		return ERRO;
+	}
 
-/*------------------ Le cabecalhos dos arquivos --------------------------*/
+	if ( learq(TFILE(HTCase), &(TCAB(HTCase)), sizeof(TCAB(HTCase))) == ERRO) {
+		printf("\nCould not read test set file");
+		return ERRO;
+	}
 
-   if ( posiciona(TFILE(HTCase), OFFSET0) == ERRO ||
-	posiciona(TFILEIO(HTCase), OFFSET0) == ERRO)
-	     return ERRO;
-
-   if ( learq(TFILE(HTCase), &(TCAB(HTCase)), sizeof(TCAB(HTCase))) == ERRO) 
-	     return ERRO;
-   return OK;
+	return OK;
 }
 
 
