@@ -205,28 +205,22 @@ FILE	*fp; /* pointer for the file which will be open */
 
 
 
-/*@FUNCTION*******************************************************************
-FECHARQ:
-	Close a file (request eliminacion of the file from the table of files 
-									open).
-Parametro:
-	fp : file pointer to the file which will be closed.
-
-Autor: Delamaro
-***************************************************************************/
-fecharq(fp)
-FILE	*fp; /* file pointer to the file which will be closed */
+/**
+ * Close a file (request elimination of the file from the table of files open).
+ *
+ * @param fp Pointer to the file which will be closed.
+ */
+int fecharq(FILE *fp)
 {
-int	i;  /* loop counter */
+	for (int i = 0; fp != NULL && i < MAX_ARQ; i++) {
+		if (tabarq[i].fp == fp) {
+			fclose(fp);
+			delarq(fp);
+			return OK;
+		}
+	}
 
-   for (i = 0; i < MAX_ARQ; i++) /*look for the file on the table
-							 of open files */
-	if (tabarq[i].fp == fp)
-	   break;
-   if (i >= MAX_ARQ || fp == NULL) /*if it'snt in the table */
-	 return;       /*returns fp=NULL */  
-   fclose(fp);  /*If the file was found on the table it is closed and */
-   delarq(fp);  /* its pointer is left out of the table of open files */
+	return ERRO;
 }
 
 

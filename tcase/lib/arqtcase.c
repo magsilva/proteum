@@ -26,51 +26,46 @@
 
 
 
-/***************************************************************************
-CRIA_ARQUIVO_TCASE:
-	Cria arquivo de caso de testes, vazio.
-parametros:
-	HTCase: structure to handle a test case file
-	dir: diretorio onde arquivo deve estar
-	nome: nome do arquivo (sem extensao)
-Autor: Delamaro
-****************************************************************************/
-cria_arquivo_tcase(HTCase, dir, nome)
-char	*dir, *nome;
-HAND_TCASE	*HTCase;
+/**
+ * Create file with empty test set.
+ *
+ * @param HTCase structure to handle a test case file
+ * @param dir Directory where the file should be stored
+ * @param nome Name of the file to be created (without the extension)
+ */
+int
+cria_arquivo_tcase(HAND_TCASE * HTCase, char * dir, char * nome)
 {
-FILE	*criarq();
-int	i;
+	int i;
 
-   memset(HTCase, 0, sizeof(*HTCase));
-/*---------------- cria arquivo E/S e arquivo de casos de teste ----------*/
-   if  ((TFILE(HTCase) = criarq(dir, nome, SUFIXO_TCASE)) == NULL || 
-	(TFILEIO(HTCase) = criarq(dir, nome, SUFIXO_IO)) == NULL )
+	memset(HTCase, 0, sizeof(*HTCase));
+
+	// Create file
+	if ((TFILE(HTCase) = criarq(dir, nome, SUFIXO_TCASE)) == NULL || (TFILEIO(HTCase) = criarq(dir, nome, SUFIXO_IO)) == NULL) {
+		return ERRO;
+	}
+	if (grava_ident(TFILE(HTCase), IDENT_TCASE) == ERRO || grava_ident(TFILEIO(HTCase), IDENT_IO) == ERRO) {
+		return ERRO;
+	}
+
+	
+	// Initialize test set
+	CONTLOG(HTCase) = 1;	/*numero do contador logico de casos de teste */
+	NTCASE(HTCase) = 0;	/* numero de casos de teste presentes */
+	for (i = 0; i < MAX_TCASE; i++) {
+		SEQLOG(HTCase)[i] = 0;
+		TAB_FIS(HTCase)[i].reg_log = 0;
+		TAB_FIS(HTCase)[i].ocup = FALSE;
+		TAB_FIS(HTCase)[i].desabili = FALSE;
+		TAB_FIS(HTCase)[i].error = FALSE;
+	}
+
+	// Save test set to file
+	if (grava_tcase_cab(HTCase) == ERRO) {
 	     return ERRO;
+	}
 
-   if ( grava_ident(TFILE(HTCase), IDENT_TCASE) == ERRO ||
-	grava_ident(TFILEIO(HTCase), IDENT_IO) == ERRO )
-	     return ERRO;
-
-/*---------------- Inicializa cabecalho do arq. de casos de teste --------*/
-   CONTLOG(HTCase) = 1;	/*numero do contador logico de casos de teste */
-   NTCASE(HTCase) = 0;	/* numero de casos de teste presentes */
-   for (i = 0; i < MAX_TCASE; i++)
-     {
-	SEQLOG(HTCase)[i] = 0;
-	TAB_FIS(HTCase)[i].reg_log = 0;
-	TAB_FIS(HTCase)[i].ocup = FALSE;
-	TAB_FIS(HTCase)[i].desabili = FALSE;
-	TAB_FIS(HTCase)[i].error = FALSE;
-     }
-
-
-/*------------------ Grava os cabecalhos nos arquivos -------------------*/
-  if (grava_tcase_cab(HTCase) == ERRO)
-	     return ERRO;
-
-
-  return OK;
+	return OK;
 }
 
 
@@ -109,35 +104,33 @@ HAND_TCASE	*HTCase;
    return OK;
 }
 
-descarrega_arquivo_tcase(HTCase)
-HAND_TCASE	*HTCase;
+
+/**
+ * Save and close file with test set.
+ *
+ * @param HTCase Structure with test set.
+ */
+int descarrega_arquivo_tcase(HAND_TCASE * HTCase)
 {
-   grava_tcase_cab(HTCase);
-   fecharq(TFILE(HTCase));
-   fecharq(TFILEIO(HTCase));
+	if (grava_tcase_cab(HTCase) == ERRO || fecharq(TFILE(HTCase)) == ERRO || fecharq(TFILEIO(HTCase)) == ERRO) {
+		return ERRO;
+	}
+	return OK;
 }
 
 
-
-
-/**************************************************************************
-GRAVA_TCASE_CAB
-	Grava cabecalho  do arquivo de casos de teste.
-Parametros:
-        HTCase: structure to handle a test case file
-*************************************************************************/
-grava_tcase_cab(HTCase)
-HAND_TCASE	*HTCase;
+/**
+ * Prepare saving of test set to a file.
+ *
+ * @param HTCase Structure with test set.
+ */
+int grava_tcase_cab(HAND_TCASE *HTCase)
 {
-   if ( posiciona(TFILE(HTCase), OFFSET0) == ERRO ||
-	gravarq(TFILE(HTCase), &(TCAB(HTCase)), sizeof(TCAB(HTCase))) == ERRO)
-	     return ERRO;
-   return OK;
+	if (posiciona(TFILE(HTCase), OFFSET0) == ERRO || gravarq(TFILE(HTCase), &(TCAB(HTCase)), sizeof(TCAB(HTCase))) == ERRO) {
+		return ERRO;
+	}
+	return OK;
 }
-
-
-
-
 
 /*************************************************************************
 GRAVA_TCASE_REG:

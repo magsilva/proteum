@@ -29,9 +29,18 @@ HAND_TCASE	HTCase,		/* structure to handle tcase file */
 		HTCase2;
 
 
-char	ArqTeste[NOME_LENGTH+1], /* nome dos arquivos de casos de teste e E/S */
-	DirCorrente[NOME_LENGTH+1], /* dir corrente */
-	DirExec[NOME_LENGTH+1],	 /* diretorio do arquivo a executar */
+char	ArqTeste[NOME_LENGTH+1]; /* nome dos arquivos de casos de teste e E/S */
+
+
+/**
+ * Current working directory. This can be changed using the option -D at the
+ * command line.
+ */
+char 	DirCorrente[NOME_LENGTH + 1];
+
+
+
+char	DirExec[NOME_LENGTH+1],	 /* diretorio do arquivo a executar */
 	ArqExec[NOME_LENGTH+1],	 /*  arquivo a executar */
 	ArqInstrum[NOME_LENGTH+1], /* arquivo executavel instrumentado */
 	DirImport[NOME_LENGTH+1], /*  dir. de onde importar Casos de Teste */
@@ -41,9 +50,7 @@ char	ArqTeste[NOME_LENGTH+1], /* nome dos arquivos de casos de teste e E/S */
 	XLabel[NOME_LENGTH+1],
 	Label[LABELSIZE];
 
-int	MenosP,
-	Menosp,
-	Menost,
+int	Menosp,
 	Menoslabel,
 	Menosf,
 	Menosv,
@@ -52,153 +59,150 @@ int	MenosP,
 
 char	verchar;
 
-main(argc, argv)
-int	argc;
-char	*argv[];
-{
-   if (argc < 3)
-   {
-	msg("Missing parameters");
-	exit(1);
-   }
 
-  if ( *argv[argc-1] == '-')
-   {
-	msg("Invalid Parameter");
-	exit(1);
-   }
-
-
-   if (strcmp(argv[1], "-create") == 0)
-   {
-	argv[1] = "";
-	CreateTcase(argc, argv);
-   }
-   else
-   if (	strcmp(argv[1], "-l") == 0 ||
-	strcmp(argv[1], "-d") == 0 ||
-	strcmp(argv[1], "-e") == 0 ||
-	strcmp(argv[1], "-i") == 0)
-   {
-	ListTcase(argc, argv);
-   }
-   else
-   if (	strcmp(argv[1], "-proteum") == 0 ||
-	strcmp(argv[1], "-poke") == 0 ||
-	strcmp(argv[1], "-ascii") == 0 )
-   {
-	ImportTcase(argc, argv);
-   }
-   else
-   if (strcmp(argv[1], "-add") == 0)
-   {
-	argv[1] = "";
-	AddTcase(argc, argv);
-   }
-   else
-   if (strcmp(argv[1], "-z") == 0)
-   {
-        argv[1] = "";
-        ZapTcase(argc, argv);
-   }
-   else
-   {
-	msg("Missing parameter");
-	exit(1);
-   }
-   return 0;
-
-}
-
-
-/***************************************************************************
-	Le parametros da opcao -create do programa
-
-***************************************************************************/
-CreateTcase(argc, argv)
-int	argc;
-char	*argv[];
-{
-int	i, n;
-
-   n = argc-3;
-   strcpy(ArqTeste, argv[argc-1]);
-
-   strcpy(DirCorrente, ".");
-   for (i = 2; i < argc-2; i++)
-   {
-	if (strcmp(argv[i], "-D") == 0)
-	{
-		if (chdir(argv[i+1]) < 0)
-		{
-			msg("Invalid directory on parameter -D");
-			exit(1);
-            	}
-		argv[i] = argv[i+1] = "";
-		n-=2;
+/**
+ * Set up work directory.
+ *
+ * @param directory Directory that should be used as working directory.
+ * @return 1 if it worked correctly, 0 otherwise.
+ */
+int setupWorkDir(char directory[]) {
+	if (stat(directory, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+		strcpy(DirCorrente, directory);
+		chdir(DirCorrente);
+		return OK;
 	}
-   }
+	return ERRO;
+}
 
-   if ( n != 0)
-   {
-	msg("Invalid parameter");
-	exit(1);
-   }
+/**
+ * Process command line arguments, addressing configuration of working directory.
+ */
+int parametersHandleWorkDir(int argc, char *argv[])
+{
+	for (i = 0; i < (argc - 2) && DirCorrente != NULL; i++) {
+		if (strcmp(argv[i], "-D") == 0) {
+			if (! setupWorkDir(argv[i + 1])) {
+				msg("Invalid directory on parameter -D");
+				return ERRO;
+        	    	}
+		}
+	}
 
-/*----------------------------- Cria arquivos de casos de teste ------------*/
+	// Could not find a parameter configuring the working directory, so the use
+	// the default one (current directory).
+	if (DirCorrente == NULL) {
+		setupWorkDir(".");	
+	}
 
-   if (cria_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
-	exit(1);
+	return OK;
+}
 
-   descarrega_arquivo_tcase(&HTCase);
+/**
+ * Process command line arguments, addressing configuration of working directory.
+ */
+int parametersHandleWorkDir(int argc, char *argv[])
+{
+	for (int i = 0; i < (argc - 2) && DirCorrente != NULL; i++) {
+		if (strcmp(argv[i], "-D") == 0) {
+			if (! setupWorkDir(argv[i + 1])) {
+				msg("Invalid directory on parameter -D");
+				return ERRO;
+        	    	}
+		}
+	}
 
+	// Could not find a parameter configuring the working directory, so the use
+	// the default one (current directory).
+	if (DirCorrente == NULL) {
+		setupWorkDir(".");	
+	}
+
+	return OK;
+}
+
+/**
+ * Process command line arguments, addressing configuration of first mutant that is
+ * going to be applied.
+ *
+ * @return Number of the mutant.
+ */
+int parametersHandleFirstMutant(int argc, char *argv[])
+{
+	int mutantNumber = -1;
+
+	for (int i = 0; i < (argc - 2); i++) {
+		if (strcmp(argv[i], "-f") == 0) {
+			mutantNumber = MAXI(atoi(argv[i+1]), t);
+		}
+	}
+}
+
+
+/**
+ * Read parameters required by option '-create' and create test set.
+ */
+int CreateTcase(int argc, char *argv[])
+{
+	int i;
+	struct stat sb;
+
+	if (parametersHandleWorkDir(argc, argv) == ERRO) {
+		return ERRO;
+	}
+
+	// File with test set is always the last argument.
+	if (i < argv) {
+		strcpy(ArqTeste, argv[argc - 1]);
+	}
+
+
+	if (ArqTeste == NULL || DirCorrent == NULL) {
+		msg("Invalid parameter");
+		return ERRO;
+	}
+
+	// Create file with empty test set
+	if (cria_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO || descarrega_arquivo_tcase(&HTCase) == ERRO)
+		msg("Could not create file with test set");
+		return ERRO;
+	}
+
+	return OK;
 }
 
 
 
-/***************************************************************************
-	Le parametros das opcoes -l -e -d -i do programa
-
-***************************************************************************/
-ListTcase(argc, argv)
-int	argc;
-char	*argv[];
-{
-int	Menosx;
-static	int VetMenosx[MAX_TCASE];
-int	Menosl, Menose, Menosi, Menosp, Menosd;
-int	f, i,j, k, n, t;
-char	*Lista;
+/**
+ * Handle listing of test cases from a file:
+ *  -l (Actually this one selects the mode where test ases will be listed).
+ *  -e
+ *  -d
+ *  -i
+ */
+int ListTcase(int argc, char *argv[]) {
+	int	Menosx;
+	static	int VetMenosx[MAX_TCASE];
+	int	Menosl, Menose, Menosi, Menosp, Menosd;
+	int	f, i,j, k, n, t;
+	char	*Lista;
+	int firstMutant;
 
    strcpy(ArqTeste, argv[argc-1]);
    n = argc - 3;
    strcpy(DirCorrente, ".");
-   Menost = Menosf = Menosp = FALSE;
+   Menosf = Menosp = FALSE;
    f = MAX_TCASE;
    t = 1;
 
+	if (parametersHandleWorkDir(argc, argv) == ERRO) {
+		return ERRO;
+	}
+
+	firstMutant = parametersHandleFirstMutant(argc, argv);
+
    for (i = 2; i < argc-2; i++)
    {
-	if (strcmp(argv[i], "-D") == 0)
-	{
-		if (chdir(argv[i+1]) < 0)
-		{
-			msg("Invalid directory on parameter -D");
-			exit(1);
-        	}
-		argv[i] = argv[i+1] = "";
-		n -= 2;
-	}
-	else
-
-	if (strcmp(argv[i], "-f") == 0)
-	{
-		t = MAXI(atoi(argv[i+1]), t);
-		Menost = TRUE;
-		argv[i] = argv[i+1] = "";
-		n -= 2;
-	}
-	else
 
 	if (strcmp(argv[i], "-t") == 0)
 	{
@@ -219,16 +223,13 @@ char	*Lista;
         }
    }
 
-   Menost = (Menost || Menosf);
-
-
 
    Menosx = 0;
    for (i = 2; i < argc-2; i++)
    {
 	if (strcmp(argv[i], "-x") == 0)
 	{
-	   if (Menost)
+	   if (firstMutant == -1 && lastMutant == -1)
 	   {
 		msg("Invalid conbination of -t or -f and -x");
 		return;
@@ -243,7 +244,7 @@ char	*Lista;
 		    if (k > 0 && (isspace(Lista[k]) || Lista[k] == '\0'))
 		    {
 			sscanf(Lista, "%d", &j);
-			if ( ! Menost || (j < t || j > f) )
+			if (firstMutant != -1 || (j < lastMutant || j > firstMutant) )
 			   if (Menosx < LEN(VetMenosx))
 			   	VetMenosx[Menosx++] = j;
 			   else
@@ -728,15 +729,13 @@ fim:
 
 ImportPoke()
 {
-FILE	*fp_ascii, *fp_par;
-int	i, j, k, cont, TemPar;
-char 	*c;
+	FILE	*fp_ascii, *fp_par;
+	int	i, j, k, cont, TemPar;
+	char 	*c;
 
-
-
-
-   if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
-	exit(1);
+	if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO) {
+		exit(1);
+	}
 
    for (i = Menost, cont = 0; i <= Menosf; i++)
    {
@@ -863,8 +862,7 @@ char *c;
    if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
 	exit(1);
 
-   for (i = Menost, cont = 0; i <= Menosf; i++)
-   {
+   for (i = firstMutant, cont = 0; i <= lastMutant; i++) {
 	buf[0] = buf1[0] = '\0';
 	if (strlen(ArqImport) > 0)
 	    sprintf(buf, "%s%d", ArqImport, i);
@@ -998,7 +996,7 @@ int     i, n;
 
    if (delete_io(&HTCase) == ERRO)
    {
-        msg("Error deleteting I/O registers");
+        msg("Error deleting I/O registers");
    }
 
    descarrega_arquivo_tcase(&HTCase );
@@ -1006,185 +1004,194 @@ int     i, n;
 }
 
 
-/***************************************************************************
-	Le parametros da opcao -add do programa
-
-***************************************************************************/
-AddTcase(argc, argv)
-int	argc;
-char	*argv[];
+/**
+ * Read parameters from -add option.
+ */
+void AddTcase(int argc, char *argv[])
 {
-int	i, MenosDD, MenosE, MenosEE, n;
-char *c;
+	int i, MenosDD, MenosE, MenosEE, n;
+	char *c;
 
-   n = argc - 3;
-   strcpy(ArqTeste, argv[argc-1]);
-   strcpy(DirCorrente, ".");
-   MenosDD = MenosE = MenosEE = Menostrace = FALSE;
-   Parametros[0] = '\0';
-   MenosP = Menosp = FALSE;
-   Menosinter = FALSE;
-   for (i = 2; i < argc-2; i++)
-   {
-	if (strcmp(argv[i], "-D") == 0)
-	{
-		if (! tem_dir(argv[i+1]))
-		{
-			msg("Invalid directory on parameter -D");
-			exit(1);
-       		}
-		strcpy(DirCorrente, argv[i+1]);
-		argv[i] = argv[i+1] = "";
-		n -= 2;
+	n = argc - 3;
+	strcpy(ArqTeste, argv[argc-1]);
+	strcpy(DirCorrente, ".");
+	MenosDD = MenosE = MenosEE = Menostrace = FALSE;
+	Parametros[0] = '\0';
+	Menosp = FALSE;
+	Menosinter = FALSE;
+	for (i = 2; i < argc-2; i++) {
+		if (strcmp(argv[i], "-D") == 0) {
+			if (! tem_dir(argv[i+1])) {
+				msg("Invalid directory on parameter -D");
+				return 1;
+			}
+			strcpy(DirCorrente, argv[i+1]);
+			argv[i] = argv[i+1] = "";
+			n -= 2;
+		} else if (strcmp(argv[i], "-DD") == 0) {
+			if (! tem_dir(argv[i+1])) {
+				msg("Invalid directory on parameter -D");
+				return 2;
+       			}
+			MenosDD = TRUE;
+			strcpy(DirExec, argv[i+1]);
+			argv[i] = argv[i+1] = "";
+			n -= 2;
+		} else if (strcmp(argv[i], "-E") == 0) {
+			MenosE = TRUE;
+			strcpy(ArqExec, argv[i+1]);
+			argv[i] = argv[i+1] = "";
+			n -= 2;
+		} else if (strcmp(argv[i], "-EE") == 0) {
+			MenosEE = TRUE;
+			strcpy(ArqInstrum, argv[i+1]);
+			argv[i] = argv[i+1] = "";
+			n -= 2;
+		} else if (strcmp(argv[i], "-label") == 0 ) {
+	                Menoslabel = TRUE;
+        	        strcpy(Label, argv[i+1]);
+                	argv[i] = argv[i+1] = "";
+	                n -= 2;
+		} else if (strcmp(argv[i], "-p") == 0) {
+			strcpy(Parametros, argv[i+1]);
+			argv[i] = argv[i+1] = "";
+			Menosp = TRUE;
+			n -= 2;
+		}		
 	}
-	else
 
-	if (strcmp(argv[i], "-DD") == 0)
-	{
-		if (! tem_dir(argv[i+1]))
-		{
-			msg("Invalid directory on parameter -D");
-			exit(1);
-       		}
-		MenosDD = TRUE;
-		strcpy(DirExec, argv[i+1]);
-		argv[i] = argv[i+1] = "";
-		n -= 2;
+	for (i = 0; i < argc-1; i++) {
+		if (strcmp(argv[i], "-P") == 0) {
+			if (Menosp) {
+				msg("Invalid options -p and -P");
+				return 1;
+			}
+			printf("\nParameters: ");
+			gets(Parametros);
+			argv[i] = "";
+			n--;
+		} else if (strcmp(argv[i], "-trace") == 0) {
+			Menostrace = TRUE;
+			argv[i] = "";
+			n--;
+		} else if (strcmp(argv[i], "-ninter") == 0) {
+			Menosinter = FALSE;
+			argv[i] = "";
+			n--;
+		}
 	}
-	else
 
-
-	if (strcmp(argv[i], "-E") == 0)
-	{
-		MenosE = TRUE;
-		strcpy(ArqExec, argv[i+1]);
-		argv[i] = argv[i+1] = "";
-		n-=2;
+	if (n != 0) {
+		msg("Invalid parameter");
+		return -2
 	}
-	else
 
-	if (strcmp(argv[i], "-EE") == 0)
-	{
-		MenosEE = TRUE;
-		strcpy(ArqInstrum, argv[i+1]);
-		argv[i] = argv[i+1] = "";
-		n-=2;
+	if (! MenosDD) {
+		strcpy(DirExec, DirCorrente);
 	}
-	else
 
-        if (strcmp(argv[i], "-label") == 0 )
-        {
-                Menoslabel = TRUE;
-                strcpy(Label, argv[i+1]);
-                argv[i] = argv[i+1] = "";
-                n-=2;
-        }
-        else
-
-	if (strcmp(argv[i], "-p") == 0)
-	{
-	   strcpy(Parametros, argv[i+1]);
-	   argv[i] = argv[i+1] = "";
-	   Menosp = TRUE;
-	   n -= 2;
+	if (! MenosE) {
+		strcpy(ArqExec, ArqTeste);
 	}
-   }
 
-   for (i = 0; i < argc-1; i++)
-   {
-	if (strcmp(argv[i], "-P") == 0)
-	{
-	   if (Menosp)
-	   {
-		msg("Invalid options -p and -P");
-		exit(1);
-	   }
-	   printf("\nParameters: ");
-	   gets(Parametros);
-	   argv[i] = "";
-	   n--;
+	if (! MenosEE) {
+		strcpy(ArqInstrum, ArqTeste);
 	}
-	else
 
-	if (strcmp(argv[i], "-trace") == 0)
-	{
-	   Menostrace = TRUE;
-	   argv[i] = "";
-	   n--;
+	if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO) {
+		return -2;
 	}
-	else
 
-	if (strcmp(argv[i], "-ninter") == 0)
-	{
-	   Menosinter = FALSE;
-	   argv[i] = "";
-	   n--;
+	if ( Menosinter) {
+		if (tcase_ex_inter(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros, SHELL) == ERRO) {
+			return -2;
+		}
+	} else {
+		if (tcase_ex_bat(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros) == ERRO) {
+			return -2;
+      		}
 	}
-   }
 
-   if (n != 0)
-   {
-	msg("Invalid parameter");
-	exit(1);
-   }
+	if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&HTCase)), 20,  Menostrace, SHELL, Menosinter) == ERRO) {
+		return -2;
+	}
+	TREG(&HTCase).interativo = Menosinter;
 
-   if ( ! MenosDD)
-	strcpy(DirExec, DirCorrente);
-
-
-   if (! MenosE)
-	strcpy(ArqExec, ArqTeste);
-   if (! MenosEE)
-	strcpy(ArqInstrum, ArqTeste);
-
-   if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
-        exit(1);
-
-   if ( Menosinter)
-   {
-      if (tcase_ex_inter(DirCorrente, ArqTeste, DirExec,
-				ArqExec, Parametros, SHELL) == ERRO)
-      {
-	 exit(1);
-      }
-   }
-   else
-   {
-      if (tcase_ex_bat(DirCorrente, ArqTeste, DirExec,
-				ArqExec, Parametros) == ERRO)
-      {
-	 exit(1);
-      }
-   }
-
-   if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros,
-                       DirCorrente, ArqTeste, &(TREG(&HTCase)),
-			20,  Menostrace, SHELL, Menosinter) == ERRO )
-	exit(1);
-    TREG(&HTCase).interativo = Menosinter;
-
-
-   inic_to_buf(TREG(&HTCase).param, sizeof(TREG(&HTCase).param));
-   inic_from_buf(Parametros);
-   for (c = from_buf(); c != NULL; c = from_buf())
-   {
-       if (to_buf(c) == ERRO)
-	    break;
-    }
-    strcpy(TREG(&HTCase).label, Label);
-    if (insere_tcase(&HTCase,  Menostrace) == ERRO)
-                exit(1);
-
-   descarrega_arquivo_tcase(&HTCase );
-
-
+	inic_to_buf(TREG(&HTCase).param, sizeof(TREG(&HTCase).param));
+	inic_from_buf(Parametros);
+	for (c = from_buf(); c != NULL; c = from_buf()) {
+		if (to_buf(c) == ERRO) {
+			break;
+		}
+	}
+	strcpy(TREG(&HTCase).label, Label);
+	if (insere_tcase(&HTCase,  Menostrace) == ERRO) {
+		return -1
+	}
+	descarrega_arquivo_tcase(&HTCase);
+	return 0;
 }
 
 
 
-msg(x)
-char *x;
+void msg(char *x)
 {
    fprintf(stderr, "tcase: %s\n", x);
 }
 
+
+int main(int argc, char *argv[])
+{
+	int err;
+
+	if (argc < 3) {
+		msg("Missing parameters");
+		exit(1);
+	}
+
+	if ( *argv[argc-1] == '-') {
+		msg("Invalid Parameter");
+		exit(1);
+	}
+
+
+	if (strcmp(argv[1], "-create") == 0) {
+		argv[1] = "";
+		err = CreateTcase(argc, argv);
+		if (err != 0) {
+			msg("Error creating test set");
+		}
+		exit(2);
+	} else if (strcmp(argv[1], "-l") == 0 || strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "-e") == 0 || strcmp(argv[1], "-i") == 0) {
+		err = ListTcase(argc, argv);
+		if (err != 0) {
+			msg("Error listing test cases");
+		}
+		exit(3);
+	} else if (strcmp(argv[1], "-proteum") == 0 || strcmp(argv[1], "-poke") == 0 || strcmp(argv[1], "-ascii") == 0 ) {
+		err = ImportTcase(argc, argv);
+		if (err != 0) {
+			msg("Error importing test cases");
+		}
+		exit(4);
+	} else if (strcmp(argv[1], "-add") == 0) {
+		argv[1] = "";
+		err = AddTcase(argc, argv);
+		if (err != 0) {
+			msg("Error adding test case to test set");
+		}
+		exit(5);
+	} else if (strcmp(argv[1], "-z") == 0) {
+	        argv[1] = "";
+        	err = ZapTcase(argc, argv);
+		if (err != 0) {
+			msg("Error reseting test set");
+		}
+		exit(6);
+	} else {
+		msg("Missing parameter");
+		exit(1);
+	}
+
+	return err;
+}
