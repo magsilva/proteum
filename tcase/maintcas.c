@@ -25,9 +25,10 @@
 
 extern char *from_buf();
 
-HAND_TCASE	HTCase,		/* structure to handle tcase file */
-		HTCase2;
-
+/**
+ * Current test set.
+ */
+HAND_TCASE	HTCase;
 
 /**
  * Name of the test session. Files regarding this session will be named as
@@ -40,7 +41,7 @@ char	ArqTeste[NOME_LENGTH+1]; /* nome dos arquivos de casos de teste e E/S */
  * Current working directory. This can be changed using the option -D at the
  * command line.
  **/
-char 	DirCorrente[NOME_LENGTH + 1];
+char 	DirCorrente[NOME_LENGTH + 1] = NULL;
 
 char 	DirExec[NOME_LENGTH+1],	 /* diretorio do arquivo a executar */
 	ArqExec[NOME_LENGTH+1],	 /*  arquivo a executar */
@@ -81,7 +82,9 @@ char	verchar;
  * @param directory Directory that should be used as working directory.
  * @return 1 if it worked correctly, 0 otherwise.
  */
-int setupWorkDir(char directory[]) {
+int
+setupWorkDir(char directory[])
+{
 	if (stat(directory, &sb) == 0 && S_ISDIR(sb.st_mode)) {
 		strcpy(DirCorrente, directory);
 		chdir(DirCorrente);
@@ -90,67 +93,14 @@ int setupWorkDir(char directory[]) {
 	return ERRO;
 }
 
-/**
- * Process command line arguments, addressing configuration of working directory.
- */
-int parametersHandleWorkDir(int argc, char *argv[])
-{
-	for (i = 0; i < (argc - 2) && DirCorrente != NULL; i++) {
-		if (strcmp(argv[i], "-D") == 0) {
-			if (! setupWorkDir(argv[i + 1])) {
-				msg("Invalid directory on parameter -D");
-				return ERRO;
-        	    	}
-		}
-	}
-
-	// Could not find a parameter configuring the working directory, so the use
-	// the default one (current directory).
-	if (DirCorrente == NULL) {
-		setupWorkDir(".");	
-	}
-
-	return OK;
-}
 
 /**
- * Process command line arguments, addressing configuration of working directory.
+ * Set up name for current test session.
  */
-int parametersHandleWorkDir(int argc, char *argv[])
+int
+setupTestSession(char sessionName[])
 {
-	for (int i = 0; i < (argc - 2) && DirCorrente != NULL; i++) {
-		if (strcmp(argv[i], "-D") == 0) {
-			if (! setupWorkDir(argv[i + 1])) {
-				msg("Invalid directory on parameter -D");
-				return ERRO;
-        	    	}
-		}
-	}
-
-	// Could not find a parameter configuring the working directory, so the use
-	// the default one (current directory).
-	if (DirCorrente == NULL) {
-		setupWorkDir(".");	
-	}
-
-	return OK;
-}
-
-/**
- * Process command line arguments, addressing configuration of first mutant that is
- * going to be applied.
- *
- * @return Number of the mutant.
- */
-int parametersHandleFirstMutant(int argc, char *argv[])
-{
-	int mutantNumber = -1;
-
-	for (int i = 0; i < (argc - 2); i++) {
-		if (strcmp(argv[i], "-f") == 0) {
-			mutantNumber = MAXI(atoi(argv[i+1]), t);
-		}
-	}
+	strcpy(ArqTeste, sessionName);
 }
 
 
@@ -166,7 +116,6 @@ CreateTcase(int argc, char *argv[])
 	if (parametersHandleWorkDir(argc, argv) == ERRO) {
 		return ERRO;
 	}
-
 
 	// Create file with empty test set
 	if (cria_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO || descarrega_arquivo_tcase(&HTCase) == ERRO) {
@@ -206,12 +155,13 @@ char	*Lista;
 		return ERRO;
 	}
 
-	firstMutant = parametersHandleFirstMutant(argc, argv);
-
    for (i = 2; i < argc-2; i++)
    {
-	if (strcmp(argv[i], "-t") == 0)
-	{
+	if (strcmp(argv[i], "-f") == 0) {
+		firstMutant = MAXI(atoi(argv[i+1]), t);
+		argv[i] = "";
+		argv[i+1] = "";
+	} else if (strcmp(argv[i], "-t") == 0) {
 		f = MINI(atoi(argv[i+1]), f);
 		Menosf = TRUE;
 		argv[i] = argv[i+1] = "";
@@ -425,50 +375,56 @@ char c;
 
 
 
-/*--------------------------------- Habilita Caso de Teste ----------------- */
-EnableTCase(i)
-int	i;
+/**
+ * Enable test case from current test set.
+ */
+int
+EnableTCase(int i)
 {
-int	k;
-
-   k = ltofis_tcase(&HTCase, i);
-   if (k == ERRO)
-	return;
-   enable_tcase(&HTCase, k);
+	int k;
+	k = ltofis_tcase(&HTCase, i);
+	if (k == ERRO) {
+		return ERRO;
+	}
+	enable_tcase(&HTCase, k);
+	return OK;
 }
 
 
    
-/*------------------------------- Desabilita Caso de Teste ----------------- */
-DisableTCase(i)
-int	i;
+/**
+ * Disable test case from current test set.
+ */
+int
+DisableTCase(int i)
 {
-int	k;
-
-   k = ltofis_tcase(&HTCase, i);
-   if (k == ERRO)
-	return;
-   disable_tcase(&HTCase, k);
+	int k;
+	k = ltofis_tcase(&HTCase, i);
+	if (k == ERRO) {
+		return ERRO;
+	}
+	disable_tcase(&HTCase, k);
+	return OK;
 }
 
-/*------------------------------- Elimina Caso de Teste ----------------- */
-DeleteTCase(i)
-int	i;
+/**
+ * Delete test case from current test set.
+ */
+int
+DeleteTCase(int i)
 {
-
-     if (delete_tcase(&HTCase, i, i) == ERRO)
-	msg("Error at deleting test case");
+	if (delete_tcase(&HTCase, i, i) == ERRO) {
+		msg("Error at deleting test case");
+		return ERRO;
+	}
+	return OK;
 }
 
-   
 
-
-
-/***************************************************************************
-	Le parametros das opcoes -proteum -poke e -ascii do programa
-
-***************************************************************************/
-void
+/**
+ * Import test cases from Proteum, Poke-Tool or ASCII file.
+ */
+int
 ImportTcase(int argc, char * argv[])
 {
 	int	i, k, MenosDD, MenosDE, MenosE, MenosEE, MenosI, n;
@@ -481,16 +437,7 @@ ImportTcase(int argc, char * argv[])
    Menosv = Menosinter = FALSE;
 
 	for (i = 2; i < argc-2; i++) {
-		if (strcmp(argv[i], "-D") == 0) {
-			if (! tem_dir(argv[i+1])) {
-				msg("Invalid directory on parameter -D");
-				exit(1);
-       			}
-			strcpy(DirCorrente, argv[i+1]);
-			argv[i] = "";
-			argv[i+1] = "";
-			printf("\nSet working directory to %s", DirCorrente);
-		} else if (strcmp(argv[i], "-DD") == 0) {
+		if (strcmp(argv[i], "-DD") == 0) {
 			if (! tem_dir(argv[i+1])) {
 				msg("Invalid directory on parameter -DD");
 				exit(1);
@@ -641,22 +588,21 @@ ImportTcase(int argc, char * argv[])
 }
 
 
-ImportProteum(argc, argv)
-int	argc;
-char	*argv[];
+int
+ImportProteum(int argc, char *argv[])
 {
-int	i, k, cont;
-FILE	*fp_ascii;
-char *c;
+	int i, k, cont;
+	FILE *fp_ascii;
+	char *c;
+	HAND_TCASE HTCase2;
 
 
-   if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
-	exit(1);
-   if (carrega_arquivo_tcase(&HTCase2, DirImport, ArqImport) == ERRO)
-   {
-	descarrega_arquivo_tcase(&HTCase);
-	exit(1);
-   }
+	if (carrega_arquivo_tcase(&HTCase, DirCorrente, ArqTeste) == ERRO)
+		exit(1);
+	if (carrega_arquivo_tcase(&HTCase2, DirImport, ArqImport) == ERRO) {
+		descarrega_arquivo_tcase(&HTCase);
+		exit(1);
+	}
 
    Menosf = MINI(Menosf, NTCASE(&HTCase2));
    for (i = Menost, cont = 0; i <= Menosf; i++)
@@ -970,20 +916,6 @@ int     i, n;
    n = argc - 3;
    strcpy(ArqTeste, argv[argc-1]);
    strcpy(DirCorrente, ".");
-   for (i = 2; i < argc-2; i++)
-   {
-        if (strcmp(argv[i], "-D") == 0)
-        {
-                if (! tem_dir(argv[i+1]))
-                {
-                        msg("Invalid directory on parameter -D");
-                        exit(1);
-                }
-                strcpy(DirCorrente, argv[i+1]);
-                argv[i] = argv[i+1] = "";
-                n -= 2;
-        }
-   }
 
    if (n != 0)
    {
@@ -1007,7 +939,7 @@ int     i, n;
 /**
  * Read command line parameters and add test cases (-add option).
  */
-void
+int
 AddTcase(int argc, char * argv[])
 {
 	int	i, MenosDD, MenosDE, MenosE, MenosEE, n;
@@ -1021,19 +953,10 @@ AddTcase(int argc, char * argv[])
 	MenosP = Menosp = FALSE;
 	Menosinter = FALSE;
 	for (i = 2; i < argc-2; i++) {
-		if (strcmp(argv[i], "-D") == 0) {
-			if (! tem_dir(argv[i+1])) {
-				msg("Invalid directory on parameter -D");
-				exit(1);
-       			}
-			strcpy(DirCorrente, argv[i+1]);
-			argv[i] = "";
-			argv[i+1] = "";
-			printf("\nSet working directory to %s", DirCorrente);
-		} else if (strcmp(argv[i], "-DE") == 0) {
+		if (strcmp(argv[i], "-DE") == 0) {
 			if (! tem_dir(argv[i+1])) {
 				msg("Invalid directory on parameter -DE");
-				exit(1);
+				return ERRO;
        			}
 			MenosDE = TRUE;
 			strcpy(DirExec, argv[i+1]); // FIXME: DirExec?
@@ -1149,7 +1072,7 @@ char *x;
 int
 main(int argc, char *argv[])
 {
-	int err;
+	int err, i;
 
 	if (argc < 3) {
 		msg("Missing parameters");
@@ -1159,6 +1082,29 @@ main(int argc, char *argv[])
 	if ( *argv[argc-1] == '-') {
 		msg("Invalid Parameter");
 		exit(1);
+	}
+
+	for (i = 0; i < (argc - 2); i++) {
+		if (strcmp(argv[i], "-D") == 0) {
+			if (setupWorkDir(argv[i + 1]) == ERRO) {
+				msg("Invalid working directory on parameter -D");
+				return ERRO;
+        	    	}
+			argv[i] = "";
+			argv[i+1] = "";
+		}
+	}
+
+	if (setupTestSession(argv[argc - 1]) == ERRO) {
+		msg("Invalid test session");
+		return ERRO;
+	}
+	argv[argc - 1] = "";
+
+	// Could not find a parameter configuring the working directory, so the use
+	// the default one (current directory).
+	if (DirCorrente == NULL) {
+		setupWorkDir(".");	
 	}
 
 
