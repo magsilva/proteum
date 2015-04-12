@@ -112,7 +112,7 @@ cria_arquivo_teste(char * dir, char *nome, char *fonte, char *exec, char *comp, 
 	return OK;
 
 erro:
-	d_msg(nome, SUFIXO_PTESTE, "Error Writing File");
+	fprintf(stderr, "Error writing to file %s.%s", nome, SUFIXO_PTESTE);
 	fecharq(fp_pteste);
 	return ERRO;
 }
@@ -121,8 +121,8 @@ erro:
 /**
  * Load test set from file.
  *
- * @param dir: diretorio onde esta o arquivo
- * @param nome: nome do arquivo de teste.
+ * @param dir diretorio onde esta o arquivo
+ * @param nome nome do arquivo de teste.
  */
 int
 carrega_arquivo_teste(char *dir, char *nome, CAB_PTESTE * cab)
@@ -183,13 +183,8 @@ carrega_arquivo_teste(char *dir, char *nome, CAB_PTESTE * cab)
 	return OK;
 
 erro:
-	d_msg(nome, SUFIXO_PTESTE, "Invalid Test File");
-	fecharq(fp_pteste);
-	return ERRO;
+	fprintf(stderr, "Invalid test file %s.%s", nome, SUFIXO_PTESTE);
 l1:
 	fecharq(fp_pteste);
 	return ERRO;
-
 }
-
-

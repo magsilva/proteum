@@ -348,8 +348,7 @@ FILE *fp;
                          nomearq(TFILE(HTCase)),SUFIXO_TMP),
               monta_nome(dirarq(TFILE(HTCase)),
                          nomearq(TFILE(HTCase)),SUFIXO_IO));
-   TFILEIO(HTCase) = abrearq(dirarq(TFILE(HTCase)),
-                         nomearq(TFILE(HTCase)),SUFIXO_IO);
+   TFILEIO(HTCase) = abrearq(dirarq(TFILE(HTCase)), nomearq(TFILE(HTCase)), SUFIXO_IO, 1);
    if (t < 0)
         return ERRO;
 }

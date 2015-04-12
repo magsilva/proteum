@@ -36,6 +36,7 @@ Atualizacao: 18/01/93
 #include	<time.h>
 #include	<sys/wait.h>
 #include        <sys/times.h>
+#include	<ctype.h>
 #include        <limits.h>
 #include	<sys/time.h>
 #include	<string.h>
@@ -226,6 +227,23 @@ int	i = 0;
 }
 
 
+/**
+ * Check if a string is empty.
+ *
+ * @param str String to be verified
+ * @return OK if empty, ERRO otherwise.
+ */
+int
+isempty(char str[])
+{
+	int i;
+	for (i = 0; i < strlen(str); i++) {
+		if (! isspace(str[i])) {
+			return ERRO;
+		}
+	}
+	return OK;
+}
 
 /*************************************************************************
 ACHA_STR:
@@ -273,32 +291,35 @@ int	i, t, j;
 
 
 	   
-/**************************************************************************
-MONTA_NOME:
-	Monta nome de um arquivo dados diretorio, nome e extensao.
-**************************************************************************/
-
-char	*monta_nome(dir, nome, ext)
-char	*dir, *nome, *ext;
+/** 
+ * Format/create filename using the directory, name and extension
+ * used as parameter.
+ *
+ * @param fullname String that will hold the full filename.
+ * @param directory Directory (can be empty or NULL)
+ * @param name Filename
+ * @param extension Extension for the new filename (can be empty or NULL).
+ *
+ * @return String with full filename or NULL if an error occurred.
+ */
+char *
+monta_nome(char *fullname, char *dir, char *nome, char *ext)
 {
-static	char	bufao[10][3*(NOME_LENGTH+1)];
-static	int	next=0;
-int	t;
-char	*buf, *p;
+	int t;
 
-   buf = bufao[next++];
-   next %= 10;
-   buf[0] = '\0';
-   if (nome[0] == '\0')
-	return buf; /* se nao tem nome, retorna vazio */
-   strcpy(buf, normaliza(dir));
-   t = strlen(buf);
-   if (t > 0 && buf[t-1] != '/')
-	 buf[t++] = '/'; 
-   p = normaliza(nome);
-   strcpy(&(buf[t]), p);
-   strcat(buf, ext);
-   return buf;
+	if (nome[0] == '\0') {
+		return NULL;
+	}
+	fullname[0] = '\0';
+	strcpy(fullname, normaliza(dir));
+	t = strlen(fullname);
+	if (t > 0 && fullname[t - 1] != '/') {
+		fullname[t] = '/';
+		t++;
+	}
+	strcpy(&fullname[t], normaliza(nome));
+	strcat(fullname, ext);
+	return fullname;
 }
 
 
@@ -376,108 +397,102 @@ int	i, t , j, k;
 
 
 
-/****************************************************************************
-MONTA_DATA:
-	monta data corrente no formato "Feb-09-93".
-Autor: Delamaro
-****************************************************************************/
-char	*monta_data()
+/**
+ * Format a string with a date in the format Month-day-year (eg., "Feb-09-93").
+ *
+ * @param date String that will hold the date. It should has at least 10 bytes.
+ *
+ * @author Delamaro
+ */
+char *monta_data(char *date)
 {
-static char buf[11];
-struct tm *localtime(), *l;
-time_t	time(), t;
+	struct tm lt;
+	time_t t;
 
-   t = time(NULL);
-   l = localtime(&t);
-   strftime(buf, 10, "%h-%d-%y",l);
-   return buf;
+	time(&t);
+	localtime_r(&t, &lt);
+	strftime(date, 10, "%h-%d-%y", &lt);
+	return date;
 }
 
 
-/****************************************************************************
-GRVA_IDENT:
-	Grava header de identificacao.
-Parametros:
-	fp: file pointer do arquivo onde deve gravar
-	str: string de identificacao
-Autor: Delamaro
-*****************************************************************************/
-grava_ident(fp, str)
-char	*str;
-FILE	*fp;
+/**
+ * Save identification header for file.
+ *
+ * @param fp Pointer to the file where the identification header should be saved.
+ * @param str Identification string.
+ *
+ * @author Delamaro
+ */
+int
+grava_ident(FILE * fp, char *str)
 {
-int	i;
-extern	char	*VERSAO;
-char	*monta_data(),
-	*p,
-	buf[64];
+	int i;
+	extern char *VERSAO;
+	char date[16];
 
-   if (posiciona(fp, 0l) == ERRO)
-	 return ERRO;
+	if (posiciona(fp, 0l) == ERRO) {
+		return ERRO;
+	}
 
-   if (fprintf(fp, "%s\n", str) == -1)
-	 goto erro;
+	if (fprintf(fp, "%s\n", str) == -1) {
+		goto erro;
+	}
 
-   if (fprintf(fp, "%s\n", p = monta_data()) == ERRO)
-	 goto erro;
+	monta_data(date);
+	if (fprintf(fp, "%s\n", date) == -1) {
+		goto erro;
+	}
 
-   if (fprintf(fp, "%s\n", VERSAO) == -1)
-	 goto erro;
+	if (fprintf(fp, "%s\n", VERSAO) == -1) {
+		goto erro;
+	}
 
-   for (i = 0; i < sizeof(buf); i++) buf[i] = ' ';
-   i = OFFSET0 - 3 - strlen(str) - strlen(VERSAO) - strlen(p);
-   buf[i-1] = '\n';
-   if (gravarq(fp, buf, i) == ERRO)
-	 return ERRO;
-   return OK;
+	return OK;
 
 erro:
-   d_msg(nomearq(fp), extarq(fp), "Error Writing File");
-   return ERRO;
+	fprintf(stderr, "Error writing header to file %s", nomearq(fp));
+	return ERRO;
 }
 
 
-/**************************************************************************
-CHECA_IDENT:
-	Procura o string de identificacao no inicio do arquivo
-Parametros:
-	fp: file pointer do arquivo a checar
-	str: string de identificacao a procurar
-Autor: Delamaro
-**************************************************************************/
-checa_ident(fp, str)
-char	*str;
-FILE	*fp;
+/**
+ * Search for the identification string at the beginning of the file.
+ *
+ * @param fp Pointer to the file to be checked.
+ * @param str Identification string to be looked for in the file.
+ *
+ * @author Delamaro
+ */
+int
+checa_ident(FILE *fp, char *str)
 {
-extern	char	*VERSAO;
-static	char	buf[OFFSET0];
-int	i;
+	extern	char	*VERSAO;
+	char	buf[OFFSET0];
+	int	i;
 
-   if (posiciona(fp, 0l) == ERRO) 
-	 return ERRO;
-   if (learq(fp, buf, OFFSET0) == ERRO)
-	     {
+	if (posiciona(fp, 0l) == ERRO) {
 		return ERRO;
-	     }
-   if (strncmp(buf, str, strlen(str)))
-	     {
-		d_msg(nomearq(fp), extarq(fp), "Invalid File");
+	}
+	if (learq(fp, buf, OFFSET0) == ERRO) {
 		return ERRO;
-	     }
-   i = 0;
+	}
+	if (strncmp(buf, str, strlen(str))) {
+		fprintf(stderr, "Could not find identifier in the file %s.%s", nomearq(fp), extarq(fp));
+		return ERRO;
+	}
 
-   while ( buf[i] != '\n' && i < OFFSET0) i++;
+	for (i = 0; buf[i] != '\n' && i < OFFSET0; i++);
 	i++;	/* here i points date of creation */
 
-   while (i < OFFSET0 && buf[i] != '\n') i++;
+	for (; i < OFFSET0 && buf[i] != '\n'; i++);
 	i++;	/* here i points version */
 
-   if (strncmp(&buf[i], VERSAO, strlen(VERSAO)) )
-   {
-	d_msg(nomearq(fp), extarq(fp), "Invalid Version");
-	return ERRO;
-   }
-   return OK;
+	if (strncmp(&buf[i], VERSAO, strlen(VERSAO)) ) {
+		fprintf(stderr, "File %s.%s was created for another version of this tool (%s)", nomearq(fp), extarq(fp), VERSAO);
+		return ERRO;
+	}
+	return OK;
 }
 
 
@@ -1031,43 +1046,41 @@ int	pid;
     }
     return OK;
 }
-    
-LeArqOp(dir, file, tab)
-char    dir[], file[];
-OPERADOR_MUTACAO        tab[];
-{
-FILE    *fp;
-char    strop[10];
-int     x, i, max;
 
-   fp = abrearq(dir, file, "", 0);
-   if (fp == NULL)
-   {
-        d_msg("Invalid operator file ", file, "");
-        return ERRO;
-   }
-   while ( fscanf(fp, "%s %d %d", strop, &x, &max) == 3)
-   {
-        i = busca_op(strop);
-        if (i >= 0)
-        {
-           do
-           {
-                if (x >= 0 && x <= 100)
-                   tab[i].percent = x;
-                else
-                {
-                   msg("Invalid Percentage in Operator File");
-                   break;
-                }
-		tab[i].maximum = max;
-                i = next_match(strop, i);
-           } while (i >= 0);
-        }
-        else
-           msg("Invalid Mutant Operator in Operator File");
-   }
-   return OK;
+/**
+ * Read file with mutation operators.
+ */
+int    
+LeArqOp(char dir[], char file[], OPERADOR_MUTACAO tab[])
+{
+	FILE    *fp;
+	char    strop[10];
+	int     x, i, max;
+
+	fp = abrearq(dir, file, "", 0);
+	if (fp == NULL) {
+		fprintf(stderr, "Invalid operator file %s", file);
+		return ERRO;
+	}
+	while (fscanf(fp, "%s %d %d", strop, &x, &max) == 3) {
+		i = busca_op(strop);
+		if (i >= 0) {
+			do {
+				if (x >= 0 && x <= 100) {
+					tab[i].percent = x;
+				} else {
+					fprintf(stderr, "Invalid percentage for operator %i in the file %s: %d", i, file, x);
+					return ERRO;
+				}
+				tab[i].maximum = max;
+		                i = next_match(strop, i);
+			} while (i >= 0);
+		} else {
+			fprintf(stderr, "Invalid mutant operator %d in the file %s", i, file);
+			return ERRO;
+		}
+	}
+	return OK;
 }
 
 

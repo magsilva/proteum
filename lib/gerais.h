@@ -154,8 +154,11 @@ void	set_free(OSET *);
 #define	set_card(x)	(x->n)
 
 
-char	*monta_nome(),
-	*normaliza();
+char	*monta_nome();
+
+char 	*normaliza();
+
+int isempty(char str[]);
 
 int	copy_file(FILE *, long, int, FILE *);
 

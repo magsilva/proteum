@@ -1,20 +1,18 @@
 /* Copyright (C) 2012 -- Marcio Eduardo Delamaro and Jose Carlos Maldonado
-# 
-# 
-# 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
-# 
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>
+ 
 */
 
 
@@ -35,15 +33,11 @@ Alteration	Responsible	Motive
 
 ###########################################################################*/
 
-#include	"gerais.h" /* estructures and definitions used in gerais.c */
-#include	<sys/file.h>
-#include	<stdlib.h>
-#include	<sys/time.h>
-#include	<sys/resource.h>
-
-char	*mktemp(char *);
-
-static	int	proxlivre = 0;
+#include "gerais.h" /* estructures and definitions used in gerais.c */
+#include <sys/file.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 static	ARQUIVO	tabarq[MAX_ARQ];  /* table of open files */	
 
@@ -51,156 +45,139 @@ char	*monta_nome(); /* make diretory+name+extension */
 
 
 
-/*@FUNCTION******************************************************************
-INSARQ:
-	Put the file's name in  the table of open files.
-
-Parameters:
-	s-name of file
-	e-extension
-	fp-pointer to the file to insert				
-*********************************************************************/
-insarq(d, s, e, fp)
-char	*d, *s, *e;
-FILE	*fp;
+/**
+ * Put the file's name in the table of open files if there is space available.
+ *
+ * @param s Name of file.
+ * @param e Extension
+ * @param fp pointer to the file to insert				
+ */
+int
+insarq(char *d, char *s, char *e, FILE *fp)
 {
-int	i;
-char	*normaliza(); /* remove blanks from the beginning and the end of a
-			string */
-   for (i = 0; i < MAX_ARQ; i++)
-	if (tabarq[i].fp == NULL)
-	    break;	/* looks for the first empty location of the table */
-   if (i >= MAX_ARQ )   /* if it don't exists, outputs error */
-	    {
-		d_msg(s, e, "No Memory to Open File");
-		return ERRO;
-	     }
-   tabarq[i].fp = fp; /* if it exists, put the file in the table */	
-   strcpy(tabarq[i].nome, normaliza(s)); /* copy the file's name to the field
-						of the table */
-   strcpy(tabarq[i].ext, normaliza(e));  /* copy the file name extension 
-						to the field of the table */
+	int i;
+	char fullname[PATH_MAX];
 
-   strcpy(tabarq[i].dir, normaliza(d));
-   return OK;
+	monta_nome(fullname, d, s, e);
+	for (i = 0; i < MAX_ARQ; i++) {
+		if (tabarq[i].fp == NULL) {
+			tabarq[i].fp = fp; /* if it exists, put the file in the table */
+			strcpy(tabarq[i].nome, normaliza(s)); /* copy the file's name to the field of the table */
+			strcpy(tabarq[i].ext, normaliza(e));  /* copy the file name extension to the field of the table */
+			strcpy(tabarq[i].dir, normaliza(d));
+			return OK;
+		}
+	}
+
+	fprintf(stderr, "No free slot to insert the file %s", fullname);
+	return ERRO;
 }
 
 
-/*@FUNCTION************************************************************
-DELARQ:
-	Removes the file's name from the table of open files.
-Parameter: 
-	   fp-pointer to the file 	
-*********************************************************************/
-delarq(fp)
-FILE	*fp;	/* pointer to the file for remove */
+/**
+ * Removes the file's name from the table of open files.
+ *
+ * @param fp Pointer to the file.
+ */
+int
+delarq(FILE *fp)
 {
-int	i;	/* loop counter */
-
-   for (i = 0; i < MAX_ARQ; i++) /* look for the file pointer in the table of */
-	if (tabarq[i].fp == fp)  /* open files */
-	    break;
-   tabarq[i].fp = NULL; /* free the location of table */
+	int i;
+	for (i = 0; i < MAX_ARQ; i++) { /* look for the file pointer in the table of open files */
+		if (tabarq[i].fp == fp) {
+			tabarq[i].fp = NULL; /* free the location of table */
+			return OK;
+		}
+	}
+	return ERRO;
 }
 
 
-/*@FUNCTION**************************************************************
-NOMEARQ:
-	Find the file's name corresponding to a file pointer.
-Parameter: 
-	   fp-pointer to the file 
-***********************************************************************/
-char	*nomearq(fp) /* file name corresponding to the file pointer */
-FILE	*fp;	 /* file pointer */   
+/**
+ * Find the file's name corresponding to a file pointer.
+ *
+ * @param fp Pointer to the file or NULL if not found.
+ */
+char *
+nomearq(FILE * fp)
 {
-int	i;	/* loop counter */
-
-   for (i = 0; i < MAX_ARQ; i++) /* looks for the pointer on the table of */
-	if (tabarq[i].fp == fp)  /* open files */
-	   break;
-   if (i >= MAX_ARQ)
-	  return (char	*) ""; /* the file isn't in the table-> not open*/
-   return tabarq[i].nome; /* if it is, returns the file name corresponding*/
-}
-
-
-/*@FUNCTION********************************************************************
-EXTARQ:
-	Find the file name extension corresponding to a file poiter.
-Parameter: 
-	   fp-pointer to the file 
-******************************************************************************/
-char	*extarq(fp) /* extension of file name corresponding to 
-			the file pointer */
-FILE	*fp;   /* file  pointer */
-{
-int	i;  /* loop counter */
-
-   for (i = 0; i < MAX_ARQ; i++) /* looks for the pointer on the table of */
-	if (tabarq[i].fp == fp)  /* open files */
-	    break;
-   if (i >= MAX_ARQ)
-	return (char	*) "";/* the file isn't in the table-> not open*/
-   return tabarq[i].ext; /* if it is, returns the file name ext. corresponding*/
-}
-
-
-/*@FUNCTION********************************************************************
-DIRARQ:
-        Find the file directory corresponding to a file poiter.
-Parameter:
-           fp-pointer to the file
-******************************************************************************/
-char    *dirarq(fp) /* directory of file name corresponding to
-                        the file pointer */
-FILE    *fp;   /* file  pointer */
-{
-int     i;  /* loop counter */
-
-   for (i = 0; i < MAX_ARQ; i++) /* looks for the pointer on the table of */
-        if (tabarq[i].fp == fp)  /* open files */
-            break;
-   if (i >= MAX_ARQ)
-        return (char    *) "";/* the file isn't in the table-> not open*/
-   return tabarq[i].dir; 
-}
-
-
-/*@FUNCTION******************************************************************
-ABREARQ:
-	Open a file for input and output.
-
-Parameters:
-	d- diretory
-	s- file name
-	e- file name extension 
-	Tipo- 0= open for input.
-	      1= open for input and output.	
-Return:
-	file poiter or NULL(if error).
-Author: Delamaro
-***************************************************************************/
-FILE	*abrearq(d, s, e, tipo)
-char	*s, *d ,*e;
-int	tipo;
-{
-FILE	*fp; /* pointer for the file which will be open */
-
-   /* makes diretory+name+extension  and opens a file with pointer=fp */ 
-   fp = fopen(monta_nome(d,s,e), tipo == 0 ? "r" : "r+");
-   if (fp == NULL) 
-	    {   /* it's impossible open the file, output error */
-		d_msg(s, e, "Error Opening File");
-		return NULL;
-	     }
-   /* if the file was opened */
-   /* Insert the file name in  the table of open files */
-   if (insarq(d, s, e, fp) == ERRO)
-   {
-	fclose(fp);
+	int i;
+	for (i = 0; i < MAX_ARQ; i++) { /* looks for the pointer on the table of */
+		if (tabarq[i].fp == fp) { /* open files */
+			return tabarq[i].nome; /* if it is, returns the file name corresponding*/
+		}
+	}
 	return NULL;
-   }
-   return fp; /* return a pointer "fp" to the file opened */
+}
+
+
+/**
+ * Find the file name extension corresponding to a file poiter.
+ *
+ * @param fp Pointer to the file or NULL if not found.
+ */
+char *
+extarq(FILE * fp)
+{
+	int i;
+	for (i = 0; i < MAX_ARQ; i++) { /* looks for the pointer on the table of */
+		if (tabarq[i].fp == fp)  { /* open files */
+	   		return tabarq[i].ext; /* if it is, returns the file name ext. corresponding*/
+		}
+	}
+	return NULL;
+}
+
+
+/**
+ * Find the file directory corresponding to a file poiter.
+ *
+ * @param fp pointer to a file or NULL if not found.
+ */
+char *
+dirarq(FILE *fp)
+{
+	int i;
+	for (i = 0; i < MAX_ARQ; i++) { /* looks for the pointer on the table of */
+		if (tabarq[i].fp == fp) { /* open files */
+	   		return tabarq[i].dir;
+		}
+	}
+	return NULL;
+}
+
+
+/**
+ * Open a file for input and output.
+ *
+ * @param d diretory
+ * @param s file name
+ * @param e file name extension 
+ * @param tipo 0= open for input, 1= open for input and output.	
+ *
+ * @return File pointer or NULL on any error.
+ */
+FILE *
+abrearq(char *d, char *s, char *e, int tipo)
+{
+	FILE *fp; /* pointer for the file which will be open */
+	char fullname[PATH_MAX];
+
+	/* makes diretory+name+extension  and opens a file with pointer=fp */ 
+	monta_nome(fullname, d, s, e);
+	fp = fopen(fullname, tipo == 0 ? "r" : "r+");
+	if (fp == NULL) {   /* it's impossible open the file, output error */
+		fprintf(stderr, "Error opening file: %s", fullname);
+		return NULL;
+	}
+
+	/* if the file was opened, insert it in  the table of open files */
+	if (insarq(d, s, e, fp) == ERRO) {
+		fclose(fp);
+		return NULL;
+	}
+
+	return fp;
 }
 
 
@@ -225,169 +202,149 @@ int fecharq(FILE *fp)
 }
 
 
-/*parei aqui */
-/*@FUNCTION*******************************************************************
-CRIARQ:
-	Creat a file.
-
-Parametro:
-	d:diretory
-	s: name
-	e:extension
-
-Autor: Delamaro
-***************************************************************************/
-FILE	*criarq(d,s,e)
-char	*d,*s,*e;
+/**
+ * Create a file and insert it into the table of open files.
+ *
+ * @param directory Directory where the file should be created.
+ * @param filename Name of the file to be created.
+ * @param extension Extension of the file to be created.
+ */
+FILE *
+criarq(char *directory, char *filename, char *extension)
 {
-FILE	*fp;
-
-   fp = fopen(monta_nome(d,s,e), "w");
-   if (fp == NULL)
-	    {
-		l1:
-		d_msg(s, e,"Error Creating File");
-		return NULL;
-	     }
-   fseek(fp, 0, SEEK_END);
-   fclose(fp);
-   fp = fopen(monta_nome(d,s,e), "r+");
-   if (fp == NULL)
-	goto l1;
-   if (insarq(d, s, e, fp) == ERRO)
-   {
-	fclose(fp);
-	return NULL;
-   }
-   fseek(fp, 0, SEEK_END);
-   return fp;
-}
-
-
-
-delearq(d,s,e)
-char	*d,*s,*e;
-{
-char	*p = (char *) monta_nome(d,s,e);
-
-   unlink(p);
-}
-
-
-
-learq(fp, buf, len)
-char	buf[];
-FILE	*fp;
-int	len;
-{
-int	i;
-
-   i = fread(buf, 1, len, fp);
-   if (i != len) 
-	     {
-		d_msg(nomearq(fp), extarq(fp), "Error Reading File");
-		return ERRO;
-	     }
-   return OK;
-}
-
-
-gravarq(fp, buf, len)
-char	buf[];
-FILE	*fp;
-int	len;
-{
-int	i;
-
-   i = fwrite(buf, 1, len, fp);
-   if (i != len) 
-	    {
-		d_msg(nomearq(fp), extarq(fp), "Error Writing File");
-		return ERRO;
-	     }
- /*  fflush(fp);  */
-   return OK;
-}
-
-
-posiciona(fp, off7)
-FILE	*fp;
-long	off7;
-{
-   if (fseek(fp, off7, 0) < 0) 
-	    {
-		d_msg(nomearq(fp), extarq(fp), "Seek Error");
-		return ERRO;
-	     }
-   return OK;
-}
-
-
-
-posifim(fp)
-FILE	*fp;
-{
-   if (fseek(fp, 0L, 2) < 0) 
-	    {
-		d_msg(nomearq(fp), extarq(fp), "Seek Error");
-		return ERRO;
-	     }
-   return OK;
-}
-
-
-
-d_msg(s, e, m)
-char	s[], m[];
-{
-char	buf[102];
-
-   sprintf(buf, "%s: %s%s", m, s,e);
-   msg(buf);
-}
-
-
-FILE *criarqtemp(d, s)
-char	*d, *s;
-{
-char	*p, *q;
-
-   p = (char *) malloc(strlen(s)+10);
-   if (p == NULL)
-   {
-	msg("Error creating temporary file (Insuficient Memory)");
-	return NULL;
-   }
-
-   strcpy(p, s);
-   strcat(p, "XXXXXX");
-   q = mktemp(p);
-
-   free(p);
-
-   return criarq(d, q, "");
-}
-
-
+	FILE *fp;
+	char fullname[PATH_MAX];
 	
+	if (monta_nome(fullname, directory, filename, extension) == NULL) {
+		return NULL;
+	}
+
+	fp = fopen(fullname, "w");
+	if (fp == NULL) {
+		fprintf(stderr, "Cannot create file %s", fullname);
+		return NULL;
+	}
+	fseek(fp, 0, SEEK_END);
+	fclose(fp);
+
+	fp = fopen(fullname, "r+");
+	if (fp == NULL) {
+		fprintf(stderr, "Cannot open file for rw: %s", fullname);
+		return NULL;
+	}
+
+	if (insarq(directory, filename, extension, fp) == ERRO) {
+		fclose(fp);
+		return NULL;
+ 	}
+	fseek(fp, 0, SEEK_END);
+	return fp;
+}
 
 
-/*@FUNCTION **************************************************************
-MAXFILE:
+/**
+ * Delete file
+ */
+int
+delearq(char d[], char s[], char e[])
+{
+	char fullname[PATH_MAX];
+	monta_nome(fullname, d, s, e);
+	unlink(fullname);
+}
 
-Return the maximum number of open files.
 
-*************************************************************************/
+/**
+ * Read data from file.
+ */
+int
+learq(FILE *fp, char buf[], int len)
+{
+	int i = fread(buf, 1, len, fp);
+	if (i != len) {
+		fprintf(stderr, "Error reading data to file %s.%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
+		return ERRO;
+	}
+	return OK;
+}
+
+/**
+ * Save data to file.
+ */
+int
+gravarq(FILE *fp, char buf[], int len)
+{
+	int i = fwrite(buf, 1, len, fp);
+	if (i != len) {
+		fprintf(stderr, "Error saving data to file %s.%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
+		return ERRO;
+	}
+	return OK;
+}
+
+/**
+ * Seek to a specific position of the file.
+ */
+int
+posiciona(FILE *fp, long offset)
+{
+	if (fseek(fp, offset, 0) < 0) {
+		fprintf(stderr, "Error seeking to the position %ld of %s.%s", offset, nomearq(fp), extarq(fp));
+		return ERRO;
+	}
+	return OK;
+}
+
+/**
+ * Seek to the end of the file.
+ */
+int
+posifim(FILE *fp)
+{
+	if (fseek(fp, 0L, 2) < 0) {
+		fprintf(stderr, "Error seeking to the end of %s.%s", nomearq(fp), extarq(fp));
+		return ERRO;
+	}
+	return OK;
+}
+
+
+/**
+ * Create temporary file.
+ *
+ * @param directory Directory where the file should be created.
+ * @param prefix Prefix for the file to be created.
+ *
+ * @return Temporary file (open for reading and writing).
+ */
+FILE *
+criarqtemp(char *directory, char *prefix)
+{
+	char fullname[PATH_MAX];
+	int fd;
+	
+	strcpy(fullname, directory);
+	strcat(fullname, prefix);
+	if (fullname[strlen(fullname)] != '/') {
+		strcat(fullname, "/");
+	}
+	strcat(fullname, "XXXXXX");
+	fd = mkstemp(fullname);
+
+	return fdopen(fd, "r+");
+}
+
+/**
+ * Get the maximum number of open files.
+ *
+ * @return The number of maximum open files or -1 on errors.
+ */
 int maxfile()
 {
-struct rlimit rlp;
-int i;
-
-   i = getrlimit(RLIMIT_NOFILE, &rlp);
-
-   if (i < 0)
-	return -1;
-
-   return (int) rlp.rlim_cur;
+	struct rlimit rlp;
+	int i = getrlimit(RLIMIT_NOFILE, &rlp);
+	if (i < 0) {
+		return -1;
+	}
+	return (int) rlp.rlim_cur;
 }
-

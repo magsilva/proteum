@@ -51,7 +51,7 @@ FILE 	*out;
    exec = argv[1];
 
    if (argc >3 )
-	out = criarq("", argv[3], "", 1); 
+	out = criarq("", argv[3], ""); 
    else
 	out = stdout;
 
