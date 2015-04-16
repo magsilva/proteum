@@ -55,7 +55,7 @@ ENTRY	x;
 	return ERRO;
    }
 
-   while (fscanf(fp, "%s %d %ld %d %d", symli.simbolo, 
+   while (fscanf(fp, "%s %ld %d %d", symli.simbolo,
                       &symli.inicio, &symli.comprimento, &symli.linha) == 4)
    {
 	list_func[nlist_func++] = p = malloc(sizeof(LI_SIMBOLO));

@@ -44,7 +44,7 @@ CovAllNode(char *pre, char *pos)
 int     u, t;
 
    Operador = COV_ALL_NODE;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -66,7 +66,7 @@ int     u;
 int 	i;
 
    Operador = COV_ALL_NODE;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -88,7 +88,7 @@ CovAllNode_goto(LI_SIMBOLO *s)
 int     u, t, i;
 
    Operador = COV_ALL_NODE;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -117,7 +117,7 @@ CovAllEdge(char *pre, char *pos)
 int	u, t;
 
    Operador = COV_ALL_EDGE;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -142,7 +142,7 @@ CovAllEdgeSw(int tembreak)
 int	u, t;
 
    Operador = COV_ALL_EDGE;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

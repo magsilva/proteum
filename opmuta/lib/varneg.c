@@ -58,7 +58,7 @@ void DirVarNeg(char *pre, char *pos)
 int     i, j;
 int     u;
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -135,7 +135,7 @@ void IndVarNeg(char *pre, char *pos, int ret)
 {
 int     i, j, u;
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

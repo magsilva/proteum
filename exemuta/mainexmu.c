@@ -57,6 +57,8 @@ void	interrup_exec();
 
 extern	OPERADOR_MUTACAO	g_tab_operador[];
 
+static int VetMenosx[4200];
+
 main(argc, argv)
 int	argc;
 char	*argv[];
@@ -88,6 +90,11 @@ char	*argv[];
    {
 	BuildSourceMuta(argc, argv, TRUE);
    }
+   else
+   if (strcmp(argv[1], "-invert") == 0 )
+   {
+		InvertMuta(argc, argv);
+	}
    else
    if (	strcmp(argv[1], "-build-view") == 0 )
    {
@@ -127,16 +134,18 @@ ExecMuta(argc, argv)
 int	argc;
 char	*argv[];
 {
-int	f, i, n, t;
-int	Menost, Menosf, MenosT, MenosQ, Menostrace, MenosDual;
-char	*Menosv = NULL;
+    static int order_tcase[MAX_TCASE];
+    int	f, i, n, t;
+    int	Menost, Menosf, MenosT, MenosQ, Menostrace, MenosDual, MenosSeed;
+    char	*Menosv = NULL;
+    long int seed = 0;
 
    n = argc-3;
    strcpy(ArqTeste, argv[argc-1]);
 
    f = MAXINTEGER;
    t = 0;
-   Menost = Menosf = Menostrace = MenosQ = MenosDual = FALSE;
+    Menost = Menosf = Menostrace = MenosQ = MenosDual = MenosSeed = FALSE;
    MenosT = 5;
    strcpy(DirCorrente, ".");
 
@@ -153,8 +162,7 @@ char	*Menosv = NULL;
 		argv[i] = "";
 		n--;
 	}
-        else
-	if (strcmp(argv[i], "-dual") == 0)
+        else if (strcmp(argv[i], "-dual") == 0)
 	{
 		MenosDual = TRUE;
 		argv[i] = "";
@@ -202,15 +210,13 @@ char	*Menosv = NULL;
 		argv[i] = argv[i+1] = "";
 		n -= 2;
 	}
-	else
-	if (strcmp(argv[i], "-T") == 0)
+                    else if (strcmp(argv[i], "-T") == 0)
 	{
 		MenosT = atoi(argv[i+1]);
 		argv[i] = argv[i+1] = "";
 		n -= 2;
 	}
-	else
-        if (strcmp(argv[i], "-v") == 0)
+                    else if (strcmp(argv[i], "-v") == 0)
         {
                 Menosv = argv[i+1];
                 argv[i] = argv[i+1] = "";
@@ -218,8 +224,13 @@ char	*Menosv = NULL;
 		if ( strlen(Menosv) == 0)
 			Menosv = DEFAULT_MENOSV;
         }
-
-
+                    else if (strcmp(argv[i], "-seed") == 0)
+                    {
+                        MenosSeed = TRUE;
+                        seed = atol(argv[i+1]);
+                        argv[i] = argv[i+1] = "";
+                        n-=2;
+                    }
    }
 
 
@@ -228,17 +239,21 @@ char	*Menosv = NULL;
 	msg("Invalid parameter");
 	exit(1);
    }
+    for (i = 0; i < MAX_TCASE; i++)
+    {
+        order_tcase[i] = i+1;
+    }
 
-/*----------------------------- Carrega arquivo de teste ---------*/
+    /*----------------------------- Carrega arquivo de teste ---------*/
    if (carrega_arquivo_teste(DirCorrente, ArqTeste, &pteste_cab) == ERRO)
 	exit(1);
 
-/*------------------------------- Carrega arquivo de teste -------------*/
+    /*------------------------------- Carrega arquivo de teste -------------*/
 
    if (carrega_arquivo_tcase(&HTCase,DirCorrente, ArqTeste) == ERRO)
 	exit(1);
 
-/*------------------------- Carrega arquivo de mutantes --------- */
+    /*------------------------- Carrega arquivo de mutantes --------- */
 
    if (carrega_arquivo_mutante(&HMuta, DirCorrente, ArqTeste) == ERRO)
    {
@@ -246,10 +261,13 @@ char	*Menosv = NULL;
 	exit(1);
    }
 
+    if (MenosSeed && seed != 0)
+            shufle(order_tcase, seed, NTCASE(&HTCase));
+
     f = MINI(f, GERADOS(&HMuta));
 
    signal(SIGINT, interrup_exec);
-   executa_mutante(MenosT, t, f, MenosQ, Menosv, Menostrace, MenosDual);
+    executa_mutante(MenosT, t, f, MenosQ, Menosv, Menostrace, MenosDual, order_tcase);
    atualiza_mutantes(&HMuta);
 
    if (flg_interrup && Menosv)
@@ -271,18 +289,21 @@ SelectMuta(argc, argv)
 int	argc;
 char	*argv[];
 {
-int	i, n, f, j, k, t, maximum, nmaximum;
-int	MenosDD, Menost, Menosf, Menosall, Menosblock, Menosk;
-unsigned long	fhash(), gera_rand();
+    int	i, n, f, j, k, t, maximum, nmaximum;
+    int	MenosDD, Menost, Menosf, Menosall, Menosblock, Menosk, MenosSeed, MenosGlobal, Menosx;
+    unsigned long	fhash(), gera_rand();
+    double xk, global_percentage = 0.0;
+    int long seed = 0;
+    char *Lista;
 
    n = argc-3;
    strcpy(ArqTeste, argv[argc-1]);
 
    for (j = 0; j < NOPERADORES; j++)
-	g_tab_operador[j].percent = 100;
+        g_tab_operador[j].percentage = 1.0;
    f = MAXINTEGER;
    t = 0;
-   Menost = Menosf = Menosblock = Menosall = Menosk = FALSE;
+    Menost = Menosf = Menosblock = Menosall = Menosk = MenosSeed = MenosGlobal = FALSE;
    strcpy(DirCorrente, ".");
    inic_to_buf(Funcoes, sizeof(Funcoes));
 
@@ -354,6 +375,15 @@ unsigned long	fhash(), gera_rand();
         }
         else
 
+            if (strcmp(argv[i], "-seed") == 0)
+            {
+                seed = atol(argv[i+1]);
+                MenosSeed = TRUE;
+                argv[i] = argv[i+1] = "";
+                n -= 2;
+            }
+        else
+
 
 	if (strcmp(argv[i], "-t") == 0)
 	{
@@ -376,24 +406,37 @@ unsigned long	fhash(), gera_rand();
 
 	if (strcmp(argv[i], "-all") == 0)
 	{
-	   k = atoi(argv[i+1]);
+                            xk = atof(argv[i+1]);
 	   for (j = 0; j < NOPERADORES; j++)
-		g_tab_operador[j].percent = k;
+                                g_tab_operador[j].percentage = xk;
 	   argv[i] = argv[i+1] = "";
 	   n -= 2;
 	   Menosall = TRUE;
 	}
 	else
-
+                        if (strcmp(argv[i], "-global") == 0)
+                        {
+                            global_percentage = atof(argv[i+1]);
+                            argv[i] = argv[i+1] = "";
+                            n -= 2;
+                            MenosGlobal = TRUE;
+                        }
+                        else
+                        if (strcmp(argv[i], "-x") == 0)
+                        {
+                            ;
+                        }
+                        else
 
 	if (*argv[i] == '-' && (j = busca_op(&(argv[i][1]) )) >= 0)
 	{
            do
            {
-                k = atoi(argv[i+1]);
-                g_tab_operador[j].percent = k;
+                                    xk = atof(argv[i+1]);
+                                    g_tab_operador[j].percentage = xk;
                 j = next_match(&(argv[i][1]), j);
-           } while (j >= 0);
+                                }
+                                while (j >= 0);
 
 	   argv[i] = argv[i+1] = "";
 	   n -= 2;
@@ -412,6 +455,44 @@ unsigned long	fhash(), gera_rand();
 
    }
 
+   Menosx = 0;
+   for (i = 2; i < argc-2; i++)
+   {
+	if (strcmp(argv[i], "-x") == 0)
+	{
+	   Lista = argv[i+1];
+	   do {
+		while (isspace(*Lista)) Lista++;
+		k = 0;
+		if (*Lista != '\0')
+		{
+		    while (isdigit(Lista[k])) k++;
+		    if (k > 0 && (isspace(Lista[k]) || Lista[k] == '\0'))
+		    {
+			sscanf(Lista, "%d", &j);
+			if ( ! Menost || (j < t || j > f) )
+			   if (Menosx < LEN(VetMenosx))
+			   	VetMenosx[Menosx++] = j;
+			   else
+				msg("Maximum list size exceded");
+		    }
+		    else
+		    {
+			erro:
+			msg("Invalid argument -x");
+			exit(1);
+		    }
+		}
+		Lista = &Lista[k];
+	      } while (*Lista != '\0');
+	   if (Menosx <= 0) goto erro;
+
+ 	   argv[i] = argv[i+1] = "";
+	   n -= 2;
+	}
+   }
+
+
    if ( n != 0)
    {
 	msg("Invalid parameter");
@@ -426,38 +507,44 @@ unsigned long	fhash(), gera_rand();
 
 
 
-/*----------------------------- Carrega arquivo de teste ---------*/
+    /*----------------------------- Carrega arquivo de teste ---------*/
    if (carrega_arquivo_teste(DirCorrente, ArqTeste, &pteste_cab) == ERRO)
 	return;
 
 
-/*------------------------- Carrega arquivo de mutantes --------- */
+    /*------------------------- Carrega arquivo de mutantes --------- */
 
    if (carrega_arquivo_mutante(&HMuta, DirCorrente, ArqTeste) == ERRO)
 	return;
    f = MINI(f, GERADOS(&HMuta));
 
 
-/*------------------ Atua sobre os mutantes selecionados -----*/
+    /*------------------ Atua sobre os mutantes selecionados -----*/
    
    strcpy(auxbuf2, pteste_cab.fonte_expa);
    strcat(auxbuf2, SUFIXO_FONTE);
    if (Menosblock)
      sele_byblock_mutante(&HMuta, f, maximum, nmaximum, Menosk);
    else
+    if (Menosx)
    {
-     for (i = 0; i < NOPERADORES; i++)
+        sele_by_number(&HMuta, t, f, VetMenosx, Menosx);
+    }
+    else
      {
-       j = g_tab_operador[i].percent = MINI(g_tab_operador[i].percent, 100);
-
-       if ( j > 0)
-	 g_tab_operador[i].semente2 =
-	 g_tab_operador[i].semente = gera_rand(fhash(auxbuf2,i,j));
+        if (MenosGlobal)
+        { // nesse caso o op 0 guarda a porcentagem global. assim nao precisa mudar o sorteio
+            g_tab_operador[0].percentage = MINI(global_percentage, 1.0);
+            init_sort(-1, seed);
+        }
        else
-	 g_tab_operador[i].semente2 = g_tab_operador[i].semente = 0;
+        for (i = 0; i < NOPERADORES; i++)
+        {
+            g_tab_operador[i].percentage = MINI(g_tab_operador[i].percentage, 1.0);
+            init_sort(i, seed);
      }
 
-     sele_byop_mutante(&HMuta, t, f, Menosk);
+        sele_byop_mutante(&HMuta, t, f, Menosk, seed);
    }
 
 
@@ -911,6 +998,35 @@ char	*Lista, *p, *q, *monta_mutante();
    else
       DirHome[0] = '\0';
 
+    for (i = 2; i < argc-2; i++)
+    {
+        if (strcmp(argv[i], "-D") == 0)
+        {
+            if (chdir(argv[i+1]) < 0)
+            {
+                msg("Invalid directory on parameter -D");
+                exit(1);
+            }
+            argv[i] = argv[i+1] = "";
+            n -= 2;
+        }
+        else
+
+
+            if (strcmp(argv[i], "-H") == 0)
+            {
+                if (! tem_dir(argv[i+1]))
+                {
+                    msg("Invalid directory on parameter -H");
+                    exit(1);
+                }
+                strcpy(DirHome, argv[i+1]);
+                argv[i] = argv[i+1] = "";
+                n -= 2;
+            }
+
+    }
+
    VetMenosx = -1;
 
    for (i = 2; i < argc-2; i++)
@@ -933,26 +1049,114 @@ char	*Lista, *p, *q, *monta_mutante();
    if (Menosx < 0)
 	return;
 
-/*----------------------------- Carrega arquivo de teste ---------*/
+    /*----------------------------- Carrega arquivo de teste ---------*/
    if (carrega_arquivo_teste(DirCorrente, ArqTeste, &pteste_cab) == ERRO)
 	return;
 
 
-/*------------------------- Carrega arquivo de mutantes --------- */
+    /*------------------------- Carrega arquivo de mutantes --------- */
 
    if (carrega_arquivo_mutante(&HMuta, DirCorrente, ArqTeste) == ERRO)
 	return;
 
 
-/*------------------ Atua sobre os mutantes selecionados -----*/
+    /*------------------ Atua sobre os mutantes selecionados -----*/
 
    p = monta_mutante(&HMuta, &pteste_cab, VetMenosx);
    if (p != NULL)
    {
-	printf("\nSource File: %s", p);
+        printf("\nSource File: %s\n", p);
+    }
+
+    descarrega_arquivo_mutante(&HMuta);
+
+}
+
+
+/***************************************************************************
+	Le parametros da opcao -invert do programa
+
+***************************************************************************/
+InvertMuta(argc, argv)
+int	argc;
+char	*argv[];
+{
+    int	f, i, n, t;
+    int	Menost, Menosf;
+
+    n = argc-3;
+    strcpy(ArqTeste, argv[argc-1]);
+
+    f = MAXINTEGER;
+    t = 0;
+    Menost = Menosf =  FALSE;
+    strcpy(DirCorrente, ".");
+
+    for (i = 2; i < argc-2; i++)
+    {
+        if (strcmp(argv[i], "-D") == 0)
+        {
+            if (chdir(argv[i+1]) < 0)
+            {
+                msg("Invalid directory on parameter -D");
+                exit(1);
+            }
+            argv[i] = argv[i+1] = "";
+            n-=2;
+        }
+        else
+
+
+            if (strcmp(argv[i], "-f") == 0)
+            {
+                t = MAXI(atoi(argv[i+1]), t);
+                Menost = TRUE;
+                argv[i] = argv[i+1] = "";
+                n -= 2;
    }
+            else
+
+
+                if (strcmp(argv[i], "-t") == 0)
+                {
+                    f = MINI(atoi(argv[i+1])+1, f);
+                    Menosf = TRUE;
+                    argv[i] = argv[i+1] = "";
+                    n -= 2;
+                }
+    }
+
+
+    if ( n != 0)
+    {
+        msg("Invalid parameter");
+        exit(1);
+    }
+
+    /*----------------------------- Carrega arquivo de teste ---------*/
+    if (carrega_arquivo_teste(DirCorrente, ArqTeste, &pteste_cab) == ERRO)
+        exit(1);
+
+    /*------------------------------- Carrega arquivo de teste -------------*/
+
+    if (carrega_arquivo_tcase(&HTCase,DirCorrente, ArqTeste) == ERRO)
+        exit(1);
+
+    /*------------------------- Carrega arquivo de mutantes --------- */
+
+    if (carrega_arquivo_mutante(&HMuta, DirCorrente, ArqTeste) == ERRO)
+    {
+        descarrega_arquivo_tcase(&HTCase);
+        exit(1);
+    }
+
+    f = MINI(f, GERADOS(&HMuta));
+
+    inverte_mutante(&HMuta, t, f);
+
 
    descarrega_arquivo_mutante(&HMuta);
+    descarrega_arquivo_tcase(&HTCase);
 
 }
 

@@ -58,7 +58,7 @@ VAR_SET	*p = &var_set_aux, *r;
 char	*var_name;
 
    Operador = DIR_VAR_REP_GLOB;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -133,7 +133,7 @@ VAR_SET *p = &var_set_aux, *r;
 char    *var_name;
 
    Operador = IND_VAR_REP_GLOB;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

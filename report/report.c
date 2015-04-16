@@ -175,9 +175,9 @@ FILE	*fp;
 	b >>=1;
 	if (b & 1)
 	{
-	   fprintf(fp, "\n\tCPU Execution Time (1/100 sec.): %d",
+	   fprintf(fp, "\n\tCPU Execution Time (1/100 sec.): %ld",
 						TREG(&HTCase).exetempo);
-	   fprintf(fp, "\n\tTotal Execution Time (1/100 sec.): %d",
+	   fprintf(fp, "\n\tTotal Execution Time (1/100 sec.): %ld",
 						TREG(&HTCase).totaltempo);
 	   fprintf(fp, "\n\tRetorn Code: %d", TREG(&HTCase).retcode);
            fprintf(fp, "\n\tParameters: %s",

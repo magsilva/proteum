@@ -28,14 +28,14 @@
 
 
 char	ArqLI[NOME_LENGTH+1],		/* nome do arquivo LI*/
-	ArqFonte[NOME_LENGTH+1],	/* arq. fonte */
-	DirCorrente[NOME_LENGTH+1], 	/* dir corrente */
-	DirOp[NOME_LENGTH+1],		/* dir. arq de % de operadores */
-	ArqOp[NOME_LENGTH+1],		/* arq. de % de operadores */
-	auxbuf[2*NOME_LENGTH+1];
+ArqFonte[NOME_LENGTH+1],	/* arq. fonte */
+DirCorrente[NOME_LENGTH+1], 	/* dir corrente */
+DirOp[NOME_LENGTH+1],		/* dir. arq de % de operadores */
+ArqOp[NOME_LENGTH+1],		/* arq. de % de operadores */
+auxbuf[2*NOME_LENGTH+1];
 
 char	Conexoes[4096],			/* nome das conexoes a testar */
-	Funcoes[4096];			/* nume das funcoes a testar */
+Funcoes[4096];			/* nume das funcoes a testar */
 
 
 extern	OPERADOR_MUTACAO	g_tab_operador[];
@@ -46,9 +46,10 @@ main(argc, argv)
 int	argc;
 char	*argv[];
 {
-int	MenosDD, Menosr;
-int	n, i, j , k, l;
-char	*getenv();
+    int	MenosDD, Menosr, MenosSeed;
+    int	n, i, j , k, l;
+    long int seed = 0;
+    char	*getenv();
 
    if (argc < 3)
    {
@@ -68,7 +69,7 @@ char	*getenv();
    strcpy(ArqLI, argv[argc-1]);
 
    strcpy(DirCorrente, ".");
-   MenosDD = Menosr = FALSE;
+    MenosDD = Menosr = MenosSeed = FALSE;
 
 
    inic_to_buf(Conexoes, sizeof(Conexoes));
@@ -111,7 +112,14 @@ char	*getenv();
 		n-=2;
 	}
 	else
-
+            if (strcmp(argv[i], "-seed") == 0)
+            {
+                seed = atol(argv[i+1]);
+                MenosSeed = TRUE;
+                argv[i] = argv[i+1] = "";
+                n -= 2;
+            }
+          else
 	if (strcmp(argv[i], "-O") == 0)
 	{
 		strcpy(ArqOp, argv[i+1]);
@@ -138,12 +146,15 @@ char	*getenv();
         {
            do
            {
-                k = atoi(argv[i+1]);
-                g_tab_operador[j].percent = MINI(k,100);
+                    double xk;
+
+                    xk = atof(argv[i+1]);
+                    g_tab_operador[j].percentage = MINI(xk,1.0);
                 k = atoi(argv[i+2]);
                 g_tab_operador[j].maximum = MINI(k,128);
                 j = next_match(&(argv[i][1]), j);
-           } while (j >= 0);
+                }
+                while (j >= 0);
 
            argv[i] = argv[i+1] = argv[i+2] = "";
            n -= 3;
@@ -152,12 +163,14 @@ char	*getenv();
   
         if (i < argc-4 && strcmp(argv[i], "-all") == 0)
         {
-           k = atoi(argv[i+1]);
+                    double xk;
+
+                    xk = atof(argv[i+1]);
 	   l = atoi(argv[i+2]);
            for (j = 0; j < NOPERADORES; j++)
 	   {
 		g_tab_operador[j].maximum = MINI(l,128);
-                g_tab_operador[j].percent = MINI(k,100);
+                        g_tab_operador[j].percentage = MINI(xk,1.0);
 	   }
            argv[i] = argv[i+1] = argv[i+2] ="";
            n -= 3;
@@ -196,7 +209,7 @@ char	*getenv();
    strcat(ArqFonte, SUFIXO_FONTE);
 
    n = opmuta(DirCorrente, ArqLI, DirCorrente, 
-			ArqFonte, Funcoes, Conexoes, Menosr);
+               ArqFonte, Funcoes, Conexoes, Menosr, seed);
 
    fprintf(stderr, "\n%d Mutants Generated\n", n);
    return 0;

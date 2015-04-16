@@ -57,7 +57,7 @@ OSET r, *p = &set_aux;
 int param1, param2, param3;
 
  Operador = U_OCNG;
- if (g_tab_operador[Operador].percent==0) return;
+ if (g_tab_operador[Operador].percentage == 0.0) return;
 
  u = sym.no;
  max = g_tab_operador[Operador].maximum;

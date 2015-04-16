@@ -76,7 +76,7 @@ int     i, j, n, max, seq, nseq;
 int     u, fim;
 OSET	*p = &set_aux;
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

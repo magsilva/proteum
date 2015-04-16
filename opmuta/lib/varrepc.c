@@ -56,7 +56,7 @@ int     u, k, t;
 OSET	*r, *p = &set_aux, *get_const_set();
 
    Operador = DIR_VAR_REP_CONST;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -122,7 +122,7 @@ int     u, k, t;
 OSET    *r, *p = &set_aux, *get_const_set();
 
    Operador = IND_VAR_REP_CONST;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

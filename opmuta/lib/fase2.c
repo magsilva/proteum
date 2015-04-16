@@ -652,6 +652,7 @@ fase2_apply_called(char *pre, char *pos, int ret)
 fase2_apply_unit(char *pre, char *pos, int op_troca)
 {
 	u_cccr(pre, pos);
+	u_ccdl(pre, pos);
 	u_ccsr(pre, pos);
 	u_crcr(pre, pos);
 	u_oaaa(pre, pos);
@@ -696,6 +697,7 @@ fase2_apply_unit(char *pre, char *pos, int op_troca)
 	u_ossn(pre, pos);
 	u_ocng(pre, pos, op_troca);
     	u_olng(pre, pos);
+    	u_oodl(pre, pos);
 	u_obng(pre, pos);    
 	u_oido(pre, pos);
 	u_oipm(pre, pos);
@@ -711,4 +713,5 @@ fase2_apply_unit(char *pre, char *pos, int op_troca)
 	u_vscr(pre, pos);
 	u_vdtr(pre, pos);
 	u_vtwd(pre, pos);
+	u_vvdl(pre, pos);
 }

@@ -36,6 +36,7 @@ char	ArqMuta[NOME_LENGTH+1],		/* nome do arquivo de mutantes */
 
 extern	OPERADOR_MUTACAO	g_tab_operador[];
 
+static	int VetMenosx[4200];
 
 main(argc, argv)
 int	argc;
@@ -229,7 +230,7 @@ int	IniName, TamDcl, TamCab, EVoid, x;
 /*---------------------- Le descritores e inclui no arquivo ------------*/
 
    for (i = 0; i < NOPERADORES; i++)
-	g_tab_operador[i].percent = 0;
+	g_tab_operador[i].percentage = 0.0;
 
    do
    {
@@ -238,7 +239,7 @@ int	IniName, TamDcl, TamCab, EVoid, x;
       if (IniFunc < 0)
 	break;
       if (scanf("%d %d %d %ld %d %s", &IniName, &TamDcl, &TamCab,
-		  &TamFunc, &EVoid, &function) != 6)
+		  &TamFunc, &EVoid, function) != 6)
           break;
       if (gets(param) == NULL)
 	  break;
@@ -331,7 +332,6 @@ int	argc;
 char	*argv[];
 {
 int	Menosx;
-static	int VetMenosx[1200];
 int	f, i,j, k, n, t;
 int	Menost, Menosf;
 char	*Lista;
@@ -554,7 +554,6 @@ int	argc, equiv;
 char	*argv[];
 {
 int	Menosx;
-static	int VetMenosx[1200];
 int	f, i,j, k, n, t;
 int	Menost, Menosf;
 char	*Lista;
@@ -683,7 +682,7 @@ char	*Lista;
 
 
 /***************************************************************************
-        Le parametros da opcao -equiv e -nequiv  do programa
+        Le parametros da opcao -anomalous e -nanomalous  do programa
 
 ***************************************************************************/
 SetAnomalous(argc, argv, anom)
@@ -691,7 +690,6 @@ int     argc, anom;
 char    *argv[];
 {
 int     Menosx;
-static  int VetMenosx[1200];
 int     f, i,j, k, n, t, s;
 int     Menost, Menosf;
 char    *Lista;
@@ -834,7 +832,6 @@ int     argc, anom;
 char    *argv[];
 {
 int     Menosx;
-static  int VetMenosx[1200];
 int     f, i,j, k, n, t, s;
 int     Menost, Menosf;
 char    *Lista;
@@ -1285,7 +1282,6 @@ int	argc;
 char	*argv[];
 {
 int	Menosx;
-static	int VetMenosx[1200];
 int	i,j, k, n;
 long	calling, called;
 int 	oper, seq1, seq2;

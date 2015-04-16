@@ -72,7 +72,8 @@ int	n, i;
    {
 
 	if  (strcmp(argv[i], "-D") == 0   || strcmp(argv[i], "-DD") == 0 ||
-	     strcmp(argv[i], "-label") == 0 || strcmp(argv[i], "-EE") == 0 )
+	     strcmp(argv[i], "-label") == 0 || strcmp(argv[i], "-EE") == 0 ||
+		strcmp(argv[i], "-timeout") == 0)
 	{
 		strcat(BufPar, " ");
 		strcat(BufPar, argv[i]);

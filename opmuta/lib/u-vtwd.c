@@ -72,7 +72,7 @@ int	u;
 OSET    r, x
 
   Operador = U_VDTR_TWD;
-  if (g_tab_operador[Operador].percent==0) return;
+  if (g_tab_operador[Operador].percentage == 0.0) return;
 
   u = sym.no;
 

@@ -82,9 +82,9 @@ u_strp()
    Operador = U_STRP;
    Operador2 = U_SSDL;
    Operador3 = U_SRSR;
-   if (g_tab_operador[Operador].percent == 0 &&
-       g_tab_operador[Operador2].percent == 0 &&
-       g_tab_operador[Operador3].percent == 0 ) return;
+   if (g_tab_operador[Operador].percentage == 0.0 &&
+       g_tab_operador[Operador2].percentage == 0.0 &&
+       g_tab_operador[Operador3].percentage == 0.0 ) return;
    max = g_tab_operador[Operador3].maximum;
    lastnode = -1;
    label_new();
@@ -481,7 +481,7 @@ int     i, n, max, seq, nseq;
 char    *q, *get_rand();
 OSET    *p, *monta_pset();
 
-   if (g_tab_operador[Operador3].percent == 0)
+   if (g_tab_operador[Operador3].percentage == 0.0)
         return;
    n = max;
    if (n == 0) n--;

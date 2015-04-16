@@ -44,7 +44,7 @@ u_smvb(int flag, LI_SIMBOLO *sfor, LI_SIMBOLO *sult, LI_SIMBOLO *sout, LI_SIMBOL
 {
  int i;
   Operador = U_SMVB;
- if (g_tab_operador[Operador].percent == 0)
+ if (g_tab_operador[Operador].percentage == 0.0)
      return;
    if ( ! e_fecha((*sfecha) ))
    	return;

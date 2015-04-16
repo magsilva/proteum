@@ -55,7 +55,7 @@ int	ngoto, nlabel;
 
 struct node	tabnodes[4096];
 
-extern	int	flg_gera;	/* indica se deve gerar li */
+extern	int	flg_gera, flg_no_empty;	/* indica se deve gerar li */
 extern  FILE	*arqgfc;
 
 int gfc_begin_function(nome)
@@ -73,6 +73,62 @@ int	i;
    return gfc_new_node();
 }
 
+
+char *find_no_empty(char *s, OSET *x)
+{
+int i;
+
+    while ( s != NULL && set_inn(x, s) >= 0)
+    {
+        i = atoi(s) - 1
+        ;
+        s = set_get(&(tabnodes[i].next), 0);
+    }
+    return s;
+
+}
+
+/*
+Esta funcao remove os nós que são vaziios do grafo
+*/
+int remove_empty()
+{
+int i, j, k;
+OSET list_empty;
+char *s, *p;
+    set_new(&list_empty);
+    // collect all the empty nodes
+    for (i = 0; i < nnodes; i++)
+   {
+       if (gfc_is_empty(i) == EMPTY )
+           set_add(&list_empty, (char *) itoa(i+1));
+   }
+
+
+    // acha os nos que apontam para os vazios
+    for (i = 0; i < nnodes; i++)
+   {
+        for (p = set_get(&(tabnodes[i].next), j = 0); p != NULL;
+             p = set_get(&(tabnodes[i].next), ++j) )
+        {
+            if ( set_inn(&list_empty, p) >= 0 )
+            {
+                s = find_no_empty(p, &list_empty);
+                gfc_del_aresta(i, atoi(p)-1);
+                if (s != NULL)
+                { // substitui p por s
+                    gfc_add_aresta(i, atoi(s)-1);
+                }
+                j--;
+            }
+        }
+   }
+
+
+
+}
+
+
 int gfc_fim_function()
 {
 int i, j;
@@ -80,6 +136,8 @@ char *p;
 
 if (flg_gera)
 {
+    if (flg_no_empty)
+        remove_empty();
    fprintf(arqgfc, "%d\n", nnodes);
    for (i = 0; i < nnodes; i++)
    {
@@ -97,7 +155,7 @@ if (flg_gera)
 	{
 	   fprintf(arqgfc, "%s ", p);
 	}
-	set_free(&(tabnodes[i].def));
+	set_free(&(tabnodes[i].use));
         fprintf(arqgfc, "\n\t");
 	for (p = set_get(&(tabnodes[i].next), j = 0); p != NULL; 
 	     p = set_get(&(tabnodes[i].next), ++j) )
@@ -105,19 +163,19 @@ if (flg_gera)
 	   fprintf(arqgfc, "%s ", p);
 	}
 	fprintf(arqgfc, "0");
-	set_free(&(tabnodes[i].def));
+	set_free(&(tabnodes[i].next));
    }
+   fprintf(arqgfc, "\n");
 }
 else
 {
    for (i = 0; i < nnodes; i++)
    {
 	set_free(&(tabnodes[i].def));
-	set_free(&(tabnodes[i].def));
-	set_free(&(tabnodes[i].def));
+	set_free(&(tabnodes[i].use));
+	set_free(&(tabnodes[i].next));
    }
 }
-fprintf(arqgfc, "\n", nnodes);
 return OK;
 }
 
@@ -142,8 +200,8 @@ int gfc_release(int node)
    if (node >= nnodes)
 	return -1;
    set_free(&(tabnodes[node].def));
-   set_free(&(tabnodes[node].def));
-   set_free(&(tabnodes[node].def));
+   set_free(&(tabnodes[node].use));
+   set_free(&(tabnodes[node].next));
    nnodes = node;
    return nnodes;
 }
@@ -201,6 +259,12 @@ char *p;
 	return -1;
    set_del(&(tabnodes[node1].next), i);
    return 0;
+}
+
+void gfc_remove_arestas(int node)
+{
+   set_free(&(tabnodes[node].next));
+   set_new(&(tabnodes[node].next));
 }
 
 int gfc_has_aresta(int node1, int node2)

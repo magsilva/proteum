@@ -60,7 +60,7 @@ char *p;
    	strcat(&bufmen[40], ": ; ");
     }
 
-   if (g_tab_operador[Operador].percent != 0)
+   if (g_tab_operador[Operador].percentage != 0.0)
    { 
      if (cont > 1)
 	add_descritor(scase->inicio, 0, scase->no, bufmen);

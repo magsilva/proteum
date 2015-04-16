@@ -43,12 +43,14 @@ int		possivel_status[MAX_TCASE];
 char    ArqTeste[NOME_LENGTH+1], /* nome dos arquivos de casos de teste e E/S */
         DirCorrente[NOME_LENGTH+1]; /* dir corrente */
 
+int tcase_order[MAX_TCASE];
 
 main(argc, argv)
 int	argc;
 char	*argv[];
 {
-int	i, n, Menosd, Menosi, Menoslabel, Menosresearch;
+int	i, n, Menosd, Menosi, Menoslabel, Menosresearch, MenosSeed;
+long int seed = 0;
 
    if (argc < 2)
    {
@@ -62,7 +64,7 @@ int	i, n, Menosd, Menosi, Menoslabel, Menosresearch;
         exit(1);
    }
 
-	   Menosd = Menosi = Menoslabel = Menosresearch = FALSE;
+	   Menosd = Menosi = Menoslabel = Menosresearch = MenosSeed = FALSE;
 	   n = argc-2;
 	   strcpy(ArqTeste, argv[argc-1]);
 
@@ -111,6 +113,14 @@ int	i, n, Menosd, Menosi, Menoslabel, Menosresearch;
                    argv[i] = "";
                    n--;
         	}
+         else
+            if (strcmp(argv[i], "-seed") == 0)
+            {
+                  MenosSeed = TRUE;
+                  seed = atol(argv[i+1]);
+                  argv[i] = argv[i+1] = "";
+                  n-=2;
+            }
    }
 
 
@@ -119,6 +129,11 @@ int	i, n, Menosd, Menosi, Menoslabel, Menosresearch;
         msg("Invalid parameter");
         exit(1);
    }
+
+    for (i = 0; i < MAX_TCASE; i++)
+    {
+        tcase_order[i] = i+1;
+    }
 
 /*----------------------------- Carrega arquivo de teste ---------*/
    if (carrega_arquivo_teste(DirCorrente, ArqTeste, &pteste_cab) == ERRO)
@@ -136,6 +151,9 @@ int	i, n, Menosd, Menosi, Menoslabel, Menosresearch;
         descarrega_arquivo_tcase(&HTCase);
         exit(1);
    }
+    if (MenosSeed && seed != 0)
+            shufle(tcase_order, seed, NTCASE(&HTCase));
+
 
    if (scan_muta(Menosresearch) == OK)
    {
@@ -189,7 +207,7 @@ int	i, j, k, t, l, b;
 
 	for (k = 1; k <= ntcase; k++)
 	{
-	   t = ltofis_tcase(&HTCase, k);
+	   t = ltofis_tcase(&HTCase, tcase_order[k-1]);
 	   if  (TAB_FIS(&HTCase)[t].reg_log > REG(&HMuta).ultimo_tcase)
 		continue;
 	   l = get_bitmap(REG(&HMuta).tcase, t);
@@ -211,7 +229,7 @@ int	n,i, j, k;
    n = NTCASE(&HTCase);
    for (i = j = 0; i < n; i++)
    {
-        k = ltofis_tcase(&HTCase, i+1);
+        k = ltofis_tcase(&HTCase, tcase_order[i]);
 	if ( TAB_FIS(&HTCase)[k].desabili == FALSE && possivel_status[i] > 0)
 	{
 	   if (lab)
@@ -220,7 +238,7 @@ int	n,i, j, k;
 		printf("%s\n", 	TREG(&HTCase).label);
 	   }
 	   else
-	   	printf("%d\n", i+1);
+	   	printf("%d\n", tcase_order[i]);
 	   j++;
 	}
    }
@@ -236,11 +254,11 @@ int	n,i, k;
    n = NTCASE(&HTCase);
    for (i = n-1; i >= 0; i--)
    {
-	k = ltofis_tcase(&HTCase, i+1);
+	    k = ltofis_tcase(&HTCase, tcase_order[i]);
         if ( TAB_FIS(&HTCase)[k].desabili == FALSE && possivel_status[i] == 0)
         {  
 	   if (flg_del)     
-	      delete_tcase(&HTCase, i+1, i+1);
+	      delete_tcase(&HTCase, tcase_order[i], tcase_order[i]);
 	   else
 		disable_tcase(&HTCase, k);		
 	}

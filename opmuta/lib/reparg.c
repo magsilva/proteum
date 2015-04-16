@@ -54,7 +54,7 @@ int     i, j, n, max, seq, nseq;
 int     u, k, pinic, pfim, t;
 OSET	*r = &set_aux, *p, *get_req_set();
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

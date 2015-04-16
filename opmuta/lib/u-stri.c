@@ -48,7 +48,7 @@ u_stri( LI_SIMBOLO *scond)
 {
     
    Operador = U_STRI;
-   if (g_tab_operador[Operador].percent != 0)
+   if (g_tab_operador[Operador].percentage != 0.0)
    {
      add_descritor(scond->inicio, 0, scond->no, "(UTRAP_ON_TRUE(");
      add_descritor(scond->inicio+ scond->comprimento, 0, scond->no, "))"  );

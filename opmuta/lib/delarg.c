@@ -40,7 +40,7 @@ extern  char    tipo[], ptar[];
 extern	int	Seq[];
 
 extern  EXPRE_POS       expre_pos,
-			ex_aux;
+ex_aux;
 
 static	int	Operador = DEL_ARG;
 
@@ -52,10 +52,10 @@ static	TIPO_NO	tipono;
 
 void DelArg(char *pre, char *pos)
 {
-int     i, j, n;
-int     u, k, pinic, pfim, t;
+    int     i, j, n;
+    int     u, k, pinic, pfim, t;
 
-   if (g_tab_operador[Operador].percent == 0)
+    if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;
@@ -67,7 +67,8 @@ int     u, k, pinic, pfim, t;
        ex_aux = expre_pos;
 
        for (i = 0; i <= expre_pos.topo; i++)
-       {            /* procura referencia do tipo desejado */
+        {
+            /* procura referencia do tipo desejado */
 
            if (expre_pos.no[i].tipo != OP_POS2 ||
                strcmp(NOME((&expre_pos), i), ")") != 0)

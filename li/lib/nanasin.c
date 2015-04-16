@@ -33,12 +33,13 @@
 int	nivel;		/* current block nesting level */
 int	nestlevel;	/* current statments nesting level */
 int	switchlevel;	/* current switch nesting level */
+int flg_tem_default; /* indicates if switch has default option */
 
 extern  int pred, seq, cond; /* predicate, statement and condition conters */
 
 extern	int	debug;
 
-extern 	int	loc;
+extern 	int	loc, nnodes;
 
 extern TABSIMBOLO	tab_vars,	/* variable table */
 			tab_tipos;	/* type table */
@@ -231,6 +232,7 @@ SIMBOLO	*ds, aux_ds;
    {
 	if ( decl)
 	  insert_simbol_variable(ds); /* insert variable in the simbol table */
+        nnodes = 0;
 	grava_li(1, "$DCL");
       	analex();
 	return TRUE;
@@ -1154,6 +1156,8 @@ int i, endnode;
    /* ??? definicao de todos os parametros */
 
    grava_li(1, "{");	/* write inic of body functio to li file */
+   gfc_no_empty(gfc_curnode(), EMPTY);
+
    nivel = 2;		/* all body declarations starts at level 2 */
 
    analex();
@@ -1177,7 +1181,8 @@ int i, endnode;
 
    for (i = 0; i < endnode; i++)
 	if ( gfc_is_return(i) )
-	   gfc_add_aresta(i,endnode);
+	   // gfc_add_aresta(i,endnode);
+	   gfc_remove_arestas(i);
 
    grava_li(1, "}");
 
@@ -1321,6 +1326,7 @@ int k;
    k = gfc_curnode();
 
    grava_li(1, "{");	/* write endof body functio to li file */
+   gfc_no_empty(k, EMPTY);
    nivel++;		/* increment nesting level */
 
    analex();
@@ -1399,6 +1405,8 @@ int i, k;
 		   {
 			elsenode = gfc_new_node();
 			grava_li(1, "$ELSE");
+            gfc_no_empty(elsenode, EMPTY);
+
 		   	gfc_add_aresta(ifnode, elsenode);
 
 			analex();
@@ -1442,6 +1450,7 @@ int i, k;
    if ( TOKEN("switch"))
    {
     int switchnode, nextnode, endnode;
+    int tmp;
 
 	switchlevel++;
 	switchnode = gfc_curnode();
@@ -1470,6 +1479,7 @@ int i, k;
 	gfc_new_node();
 	analex();	   
 
+    flg_tem_default = FALSE;
 	if ( ! statement())
 	{
 	   sintatic_error;
@@ -1494,7 +1504,10 @@ int i, k;
 	   }
 	}
 	trata_break(switchnode, nextnode);
+	if ( ! flg_tem_default)
 	gfc_add_aresta(switchnode,nextnode);
+    flg_tem_default = tmp;
+
 	switchlevel--;
     }
     else
@@ -1606,7 +1619,7 @@ struct tableout	aux_saida;
 	   gfc_no_empty(labelnode, WLABEL);
 	}
 	gfc_case(labelnode, TRUE);
-
+    flg_tem_default =  TRUE;
 	grava_li(1, "$ROTD");
 
 	analex();
@@ -1628,15 +1641,16 @@ iteraction_statement()
 
    if ( TOKEN("while"))
    {
-    int whilenode, bodynode, nextnode;
+    int condnode, whilenode, bodynode, nextnode;
 	nestlevel++;
+
 	whilenode = gfc_curnode();
-	if (  gfc_is_empty(whilenode) == NOEMPTY)
+/*	if (  gfc_is_empty(whilenode) == NOEMPTY)
 	{
 	   gfc_add_aresta(whilenode, gfc_new_node());
 	   whilenode = gfc_curnode();
 	}
-
+*/
 	grava_li(1, "$WHILE");
 
 	analex();
@@ -1644,6 +1658,9 @@ iteraction_statement()
 	{
 	   sintatic_error;
 	}
+	condnode = gfc_new_node();
+	gfc_add_aresta(whilenode, condnode);
+
 	analex();
 	if ( ! expression())
 	{
@@ -1656,7 +1673,7 @@ iteraction_statement()
 	grava_li(3, "$C");
 
 	bodynode = gfc_new_node();
-	gfc_add_aresta(whilenode, bodynode);
+	gfc_add_aresta(condnode, bodynode);
 	analex();
 	if ( ! statement())
 	{
@@ -1671,10 +1688,10 @@ iteraction_statement()
 	}
 	nextnode = gfc_new_node();
 	if (bodynode >= 0)
-	   gfc_add_aresta(bodynode, whilenode);
-	gfc_add_aresta(whilenode, nextnode);
-	trata_break(whilenode, nextnode);
-	trata_continue(whilenode,nextnode);
+	   gfc_add_aresta(bodynode, condnode);
+	gfc_add_aresta(condnode, nextnode);
+	trata_break(condnode, nextnode);
+	trata_continue(condnode,nextnode);
 	nestlevel--;
    }
    else
@@ -1684,13 +1701,15 @@ iteraction_statement()
 
 	nestlevel++;
 	donode = gfc_curnode();
-	if (  gfc_is_empty(donode) == NOEMPTY)
+/*	if (  gfc_is_empty(donode) == NOEMPTY)
 	{
 	   gfc_add_aresta(donode, gfc_new_node());
 	   donode = gfc_curnode();
 	}
-
+*/
 	grava_li(1, "$REPEAT");
+	gfc_add_aresta(donode, gfc_new_node());
+	donode = gfc_curnode();
 
 	analex();
 	if ( ! statement())
@@ -1708,6 +1727,10 @@ iteraction_statement()
 	{
 	   sintatic_error;
 	}
+
+	whilenode = gfc_curnode();
+	gfc_add_aresta(whilenode, gfc_new_node());
+
 	analex();
 	if ( ! expression())
 	{
@@ -1724,14 +1747,14 @@ iteraction_statement()
 	}
 	grava_li(3, "$NC");
 
-	whilenode = gfc_curnode();
 	
+	whilenode = gfc_curnode();
 	gfc_add_aresta(whilenode, donode);
 	nextnode = gfc_new_node();
-	gfc_add_aresta(donode, nextnode);
+//	gfc_add_aresta(donode, nextnode);
 	gfc_add_aresta(whilenode, nextnode);
 	trata_break(donode, nextnode);
-	trata_continue(donode,nextnode);
+	trata_continue2(donode,whilenode);
 	nestlevel--;
 	
 	analex();
@@ -2537,6 +2560,18 @@ int i;
 	if (gfc_is_continue(i) )
 	{
 	   gfc_add_aresta(i, contnode);
+	   gfc_continue(i, FALSE);
+	}
+}
+
+trata_continue2(int contnode, int endnode)
+{
+int i;
+
+   for (i = endnode; i > contnode; i--)
+	if (gfc_is_continue(i) )
+	{
+	   gfc_add_aresta(i, endnode);
 	   gfc_continue(i, FALSE);
 	}
 }

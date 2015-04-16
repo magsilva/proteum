@@ -43,6 +43,7 @@ char Filename[NOME_LENGTH+1],        /* nli filename */
      Directory[NOME_LENGTH+1],       /* current directory */
      LogFileName[NOME_LENGTH+1];
 
+int g_nootimize;
 
 /*----------------------------------------------------------------------------*/
 /*   Main Function
@@ -55,7 +56,8 @@ int     argc;
 char    *argv[];
 {
    int  i, 
-        tmp;
+        tmp,
+        noti = 0;
 
    if (argc < 2) {
       msg ("Missing Parameters");
@@ -95,6 +97,13 @@ char    *argv[];
          argv[i] = argv[i+1] = "";
          tmp-=2;
       }
+      else
+     if ( strcmp(argv[i],"-nootimize") == 0 )
+     {
+         noti = 1;
+         argv[i] = "";
+         tmp -= 1;
+     }
    }
  
    if (tmp != 0) {
@@ -115,7 +124,7 @@ char    *argv[];
       exit (1);
    }
 
-   if (instrumenta (Directory, Filename, LogFileName))
+   if (instrumenta (Directory, Filename, LogFileName, noti))
        exit (0);
    else exit (1);
 }
@@ -129,10 +138,11 @@ char    *argv[];
 /*   last atualization: 08/26/96
 /*----------------------------------------------------------------------------*/
 
-int instrumenta (dir, file, logfile) 
+int instrumenta (dir, file, logfile, nootimize)
 char dir[],
      file[],
      logfile[];
+int nootimize;
 {  
    if ((fp_source = abrearq (dir, file, ".c", 0)) == NULL) {
       return FALSE;  
@@ -151,10 +161,14 @@ char dir[],
    }
   
    /* creates files with ponta_de_prova () */
+   if (nootimize)
+      create_func_pp2 (monta_nome(dir, logfile, SUFIXO_LOG), dir, file);
+   else
    create_func_pp (monta_nome(dir, logfile, SUFIXO_LOG), dir, file);
 
    /* instruments source file */
    getsymbol();
+   g_nootimize = nootimize;
    program(); 
 
    fprintf(fp_instrum, "\n\n");

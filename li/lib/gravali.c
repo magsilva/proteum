@@ -57,8 +57,10 @@ char buf[30];
   default: printf("erro nos argumentos de grava_li\n");
 	   break; 
   }
-  fprintf (arqli,"%-15s%6d %10ld %6d %6d\n", 
+  fprintf (arqli,"%-15s%6d %10ld %6ld %6ld\n",
 			buf,nnodes, ini_token,comp_token,lin_token);
+  if ( gfc_is_empty(nnodes-1) == EMPTY )
+      gfc_no_empty(nnodes-1, NOEMPTY);
   ini_token = 0;
  }
 /*

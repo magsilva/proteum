@@ -65,8 +65,10 @@
 
 /* grupo U (UNIDADE) */
 #define		U_CCCR		(DEL_FUNC_CALL+1)
-#define		U_CCSR		(U_CCCR+1)
+#define		U_CCDL		(U_CCCR+1)
+#define		U_CCSR		(U_CCDL+1)
 #define 	U_CRCR		(U_CCSR+1)
+
 #define		U_OAAA		(U_CRCR+1)
 #define		U_OAAN		(U_OAAA+1)
 #define		U_OABA		(U_OAAN+1)
@@ -99,8 +101,8 @@
 #define		U_OLNG		(U_OLLN+1)
 #define		U_OLRN		(U_OLNG+1)
 #define		U_OLSN		(U_OLRN+1)
-
-#define		U_ORAN		(U_OLSN+1)
+#define		U_OODL		(U_OLSN+1)
+#define		U_ORAN		(U_OODL+1)
 #define		U_ORBN		(U_ORAN+1)
 #define		U_ORLN		(U_ORBN+1)
 #define 	U_ORRN		(U_ORLN+1)
@@ -142,6 +144,7 @@
 #define		U_VLTR		(U_VLSR+1)
 #define		U_VSCR		(U_VLTR+1)
 #define		U_VTWD		(U_VSCR+1)
+#define		U_VVDL		(U_VTWD+1)
 
 
 #define		SUFIXO_NLI	".nli"

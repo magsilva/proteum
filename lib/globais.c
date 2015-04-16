@@ -30,7 +30,7 @@
 
 #include	"gerais.h"
 
-char	*VERSAO = "V 1.1 - IM";
+char	*VERSAO = "V 2.1 - IM";
 
 /* Versao:
 	1.2 - Initial version with separated programs.
@@ -137,6 +137,8 @@ TRUE, 0, 0, 0, 0, NULL,
 
 "u-Cccr","Constant for Constant Replacement", 
 TRUE, 0, 0, 0, 0, NULL,
+"u-CCDL","Constant Deletion",
+TRUE, 0, 0, 0, 0, NULL,
 "u-Ccsr","Constant for Scalar Replacement ", 
 TRUE, 0, 0, 0, 0, NULL,
 "u-CRCR","Required Constant Replacement", 
@@ -204,6 +206,8 @@ TRUE, 0, 0, 0, 0, NULL,
 "u-OLRN","Logical Operator by Relational Operator", 
 TRUE, 0, 0, 0, 0, NULL,
 "u-OLSN","Logical Operator by Shift Operator", 
+TRUE, 0, 0, 0, 0, NULL,
+"u-OODL","Operator Deletion",
 TRUE, 0, 0, 0, 0, NULL,
 "u-ORAN","Relational Operator by Arithmetic Operator", 
 TRUE, 0, 0, 0, 0, NULL,
@@ -285,8 +289,10 @@ TRUE, 0, 0, 0, 0, NULL,
 TRUE, 0, 0, 0, 0, NULL,
 "u-VTWD","Twiddle Mutations", 
 TRUE, 0, 0, 0, 0, NULL,
+"u-VVDL","Variable Deletion",
+TRUE, 0, 0, 0, 0, NULL,
 
-NULL, NULL, 0, 0, 0, 0, NULL
+NULL, NULL, 0, 0, 0, 0, 0, NULL
 };
 
 
@@ -329,47 +335,8 @@ int	i;
 }
 
 
-#define         UNSLONG         (0x7fffffff)
-long gera_rand(t)
-long t;
-{
-   srand48(t);
-   return lrand48();
-}
 
 
-epragerar(t, x)
-unsigned long   t;
-int     x;
-{
-unsigned long k;
-
-   k = UNSLONG / 100 * x;
-   return  (t < k);
-}
-
-
- /*
-#define         UNSLONG         (0x7fffffff/100*100)
-
-unsigned long gera_rand(t)
-unsigned long t;
-{
-   return (unsigned long) 1220703125 * t;
-}
-
-
-epragerar(t, x)
-unsigned long	t;
-int	x;
-{
-unsigned long k;
-
-   k = (unsigned) -1;
-   k = k / 100 * x;
-   return  (t <= k);
-}
-*/
 
 /**************************************************************************
 SORTEIO:
@@ -380,44 +347,147 @@ Parametros:
 Autor:
         Delamaro
 ***************************************************************************/
-sorteio(n)
+xsorteio(n)
 int     n;
 {
-unsigned long   t, j;
-int     x;
+double     x;
+long int d;
 
-    if ((x = g_tab_operador[n].percent) == 100)
+    if ((x = g_tab_operador[n].percentage) == 1.0)
           return TRUE;
-    if (x == 0)
+    if (x == 0.0)
           return FALSE;
-
-   j = UNSLONG / 100 * 100;
-   t = g_tab_operador[n].semente;
-
-   while ( t >= j)
-   {
-      t = gera_rand(t);
-   }
-
-    g_tab_operador[n].semente = gera_rand(t);
-    return epragerar(t, x);
+    d = g_tab_operador[n].semente;
+    srandom(d);
+    d = random();
+    g_tab_operador[n].semente = d;
+    return (d / (double) RAND_MAX) <= x;
 }
+
+/* esse vetor conta qtos numeros aletorios foram gerados para
+cada operador. a cada sorteio a sequencia é reiniciada e antes de se fazer o sorteio
+retira-se esse numero de sorteios
+
+Isso precisa ser melhorado pois eh uma clara fonte de ineficiencia
+*/
+
+static rand_cont[NOPERADORES];
+
+int sorteio2(int n)
+{
+double     x;
+int i;
+long int r;
+
+    if ((x = g_tab_operador[n].percentage) == 1.0)
+          return TRUE;
+    if (x == 0.0)
+          return FALSE;
+    r = g_tab_operador[n].semente;
+    srandom(r); // inicializa o gerador
+    for (i = 0; i < rand_cont[n]; i++)
+       random();
+    r = random();
+//    printf("%ld ", r);
+    rand_cont[n]++;
+//    printf("(%lf %lf) ", ((double)r / (double) RAND_MAX), x);
+    return ((double)r / (double) RAND_MAX) <= x;
+}
+
+
+void init_sort2(int op, long int seed)
+{
+    int i;
+    g_tab_operador[op].semente = seed+1;
+    g_tab_operador[op].semente2 = seed+1;
+    for (i = 0; i < NOPERADORES; i++)
+   {
+        rand_cont[i] = 0;
+   }
+}
+
+/*
+void init_sort(int op, long int seed)
+{
+    // printf("%ld ", seed);
+    srandom(seed+1);
+}
+
+int sorteio(int n)
+{
+    long int r;
+    double x;
+    if ((x = g_tab_operador[n].percentage) == 1.0)
+          return TRUE;
+    if (x == 0.0)
+          return FALSE;
+    x = g_tab_operador[n].percentage;
+    r = random();
+ //   printf("%ld ", r);
+ //   printf("(%lf %lf) ", ((double)r / (double) RAND_MAX), x);
+    return ((double) r / (double) RAND_MAX) <= x;
+}
+
+*/
+
+
 
 int op_rand_int(n, m)
 int	n, m;
 {
-unsigned long t, j;
+long int t, j;
 int i, k;
 
-   j = UNSLONG / m * m;
    t = g_tab_operador[n].semente2;
-
-   while ( t >= j)
-   {
-      t = gera_rand(t);
-   }
-   g_tab_operador[n].semente2 = gera_rand(t);
+   srandom(t);
+   t = random();
+   g_tab_operador[n].semente2 = t;
    return t % m;
 }
 
+static int cont_vet[NOPERADORES];
+static int glb_flag;
 
+void init_sort(int op, long int seed)
+{
+    int gap;
+    glb_flag = FALSE;
+    double x = 1.0;
+    if (op < 0 ) // indica que é opcao global, ou seja a selecao nao eh feita
+    {               // por operador mas sim entre todos os mutantes
+        glb_flag = TRUE;
+        op = 0;
+    }
+    if ( g_tab_operador[op].percentage == 1.0 )
+        gap = 1;
+    else
+    if (g_tab_operador[op].percentage == 0.0 )
+        gap = -1;
+    else
+   {
+        x = x / g_tab_operador[op].percentage;
+        gap = (int) (x + 0.5); // arredonda
+   }
+    cont_vet[op] = gap - 1;
+    g_tab_operador[op].semente = seed % gap;
+}
+
+int sorteio(int op)
+{
+    double x;
+    if (glb_flag) op = 0; // indica que é opcao global, ou seja a selecao nao eh feita
+
+    if ((x = g_tab_operador[op].percentage) == 1.0)
+          return TRUE;
+    if (x == 0.0)
+          return FALSE;
+    // se contador chegou ao zero, seleciona o mutante
+    if (g_tab_operador[op].semente == 0)
+    {
+        g_tab_operador[op].semente = cont_vet[op];
+        return TRUE;
+    }
+    // caso contrario decrementa o contador
+    g_tab_operador[op].semente--;
+    return FALSE;
+}

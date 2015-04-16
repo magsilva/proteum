@@ -25,7 +25,8 @@
 #include	"li.h"
 
 
-int	flg_gera;	/* flag que indica se deve ser gerada LI ou nao */
+int	flg_gera,	/* flag que indica se deve ser gerada LI ou nao */
+    flg_no_empty = FALSE;
 
 int	error_sintatic; /* flag shows if there was a sintatic error in parser */
 
@@ -64,7 +65,7 @@ PARAMETROS:
 		gerar LI)
 ***************************************************************************/
 inic_parser(dir, arq, buf, dirli, arli, arcall)
-char	*arq, *buf, *dirli, *arli, *arcall;
+char	*dir, *arq, *buf, *dirli, *arli, *arcall;
 {
 
    flg_gera = (arli != NULL);

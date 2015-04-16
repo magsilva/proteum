@@ -341,8 +341,8 @@ char c;
    printf("\n\t%s", TAB_FIS(&testSet)[k].desabili? "DISABLED": "ENABLED");
    if (TAB_FIS(&testSet)[k].error)
 	printf("\n\tTest case caused an ERROR");
-   printf("\n\tExec. Time (CPU): %d", TREG(&testSet).exetempo); 
-   printf("\n\tExec. Time (total): %d", TREG(&testSet).totaltempo);
+   printf("\n\tExec. Time (CPU): %ld", TREG(&testSet).exetempo); 
+   printf("\n\tExec. Time (total): %ld", TREG(&testSet).totaltempo);
    printf("\n\tReturn Code: %d", TREG(&testSet).retcode);
    if (TAB_FIS(&testSet)[k].error)
 	printf(" (Failure with test case)");
@@ -376,7 +376,7 @@ char c;
       for (n = 0; n < testSet.log->nfunction; n++)
       {
 	 p = &(testSet.log->vetfunc[n]);
-	 printf("\n\tFunction: %d\n\tBlocks: ", p->function);
+	 printf("\n\tFunction: %ld\n\tBlocks: ", p->function);
 	 for (j = 1; j <= p->nnode; j++)
 	 {
 	   if (get_log_bit(p->nodes, j))
@@ -508,7 +508,7 @@ ImportProteum(int argc, char *argv[])
 		}
 		fecharq(fp_ascii);
 
-		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, TREG(&importedTestSet).param, DirCorrente, ArqTeste, &(TREG(&testSet)), 20,  enableTrace, NULL, TREG(&testSet).interativo) == ERRO) {
+		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, TREG(&importedTestSet).param, DirCorrente, ArqTeste, &(TREG(&testSet)), 120,  enableTrace, NULL, TREG(&testSet).interativo) == ERRO) {
 			continue;
 		}
 		TREG(&testSet).interativo = TREG(&importedTestSet).interativo;
@@ -629,7 +629,7 @@ ImportPoke()
 
        if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros,
                         DirCorrente, ArqTeste, &(TREG(&testSet)), 
-			20,  enableTrace, SHELL, Menosinter) == ERRO )
+			120,  enableTrace, SHELL, Menosinter) == ERRO )
 		   break;
 	TREG(&testSet).interativo = Menosinter;
 
@@ -745,7 +745,7 @@ char *c;
 	       	        break;
         	fecharq(fp_ascii);
 		fecharq(fp2);
-		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), 20,  enableTrace, SHELL, Menosinter) == ERRO) {
+		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), 120,  enableTrace, SHELL, Menosinter) == ERRO) {
 			printf("\nCould not run executable against input data and command line parameters");
 			break;
 		}
@@ -810,15 +810,22 @@ ZapTcase(int argc, char *argv[])
 int
 AddTcase(int argc, char * argv[])
 {
-	int i, n;
+	int i, n, timeout = 20;
 	char *c;
 
 	Parametros[0] = '\0';
+	for (i = 0; i < (argc - 2); i++) {
+		if (strcmp(argv[i], "-timeout") == 0) {
+			timeout = atoi(argv[i+1]);
+			argv[i] = argv[i+1] = "";
+		}
+	}
+
 	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
 	        return ERRO;
 	}
 
-	if ( Menosinter) {
+	if (Menosinter) {
 		if (tcase_ex_inter(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros, SHELL) == ERRO) {
 			return ERRO;;
 		}
@@ -828,7 +835,7 @@ AddTcase(int argc, char * argv[])
 		}
 	}
 
- 	if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), 20,  enableTrace, SHELL, Menosinter) == ERRO ) {
+ 	if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), timeout,  enableTrace, SHELL, Menosinter) == ERRO ) {
 		return ERRO;
 	}
 	TREG(&testSet).interativo = Menosinter;
@@ -871,6 +878,7 @@ main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < (argc - 2); i++) {
+		fprintf(stdout, "Processando parâmetro %d: %s", i, argv[i]);
 		if (strcmp(argv[i], "-D") == 0) {
 			if (setupWorkDir(argv[i + 1]) == ERRO) {
 				msg("Invalid working directory on parameter -D");
@@ -878,8 +886,8 @@ main(int argc, char *argv[])
         	    	}
 			argv[i] = "";
 			argv[i+1] = "";
-		}
-		if (strcmp(argv[i], "-DD") == 0) {
+			fprintf(stdout, "\nSet test session directory for %s", DirCorrente);
+		} else if (strcmp(argv[i], "-DD") == 0) {
 			if (! tem_dir(argv[i+1])) {
 				msg("Invalid directory on parameter -DD");
 				return ERRO;

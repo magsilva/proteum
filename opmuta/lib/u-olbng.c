@@ -81,7 +81,7 @@ int param1, param2;
 
 
 
-if (g_tab_operador[Operador].percent==0) return;
+if (g_tab_operador[Operador].percentage == 0.0) return;
 
  r = op;
  u = sym.no;

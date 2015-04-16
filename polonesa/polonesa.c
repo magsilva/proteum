@@ -70,7 +70,7 @@ EXPRE_POS	*e;
 char	s[];
 TIPO_NO	k;
 {
-int	i, j;
+    int	i, j;
 
    i = e->topo + 1;
    if (i >= LEN(e->no))
@@ -91,7 +91,7 @@ sub_expre(e, k)
 EXPRE_POS	*e;
 TIPO_NO	k;
 {
-int	i;
+    int	i;
 
    i = e->topo;
    e->no[i].tipo = k;
@@ -115,7 +115,7 @@ char	s[];
 TIPO_NO	k;
 int	n;
 {
-int	i, j;
+    int	i, j;
 
    i = e->topo + 1;
    if (i >= LEN(e->no))
@@ -147,14 +147,21 @@ PRINT_EXPRE:
 print_expre(e)
 EXPRE_POS	*e;
 {
-int	i;
+    print_sub_expre(e, e->topo);
+}
 
-   for (i = 0; i <= e->topo; i++)
+print_sub_expre(e, topo)
+EXPRE_POS	*e;
+int topo;
+{
+    int	i;
+
+    for (i = 0; i <= topo; i++)
 	{
 	   printf("%s  ", &(e->buf[e->no[i].nome]));
         }
    aux_expre2 = expre_pos;
-   monta_in_expre(e, 0, e->topo);
+    monta_in_expre(e, 0, topo);
    printf("\n%s\n", expre_pos.buf);
    expre_pos = aux_expre2;
 }
@@ -173,8 +180,8 @@ Saida:
 gera_expre(buf)
 char	buf[];
 {
-char	c;
-int	i, ret;
+    char	c;
+    int	i, ret;
 
    i = strlen(buf);
    buf[i] = ' ';
@@ -199,7 +206,7 @@ EXPRE_POS *e, *f:	Endereco das expressoes
 compara_expre(e,f)
 EXPRE_POS	*e, *f;
 {
-int	i, j;
+    int	i, j;
 
    for (i = j = 0; i <= e->topo && j <= f->topo; i++, j++)
      {
@@ -229,9 +236,9 @@ monta_in_expre(e, k, l)
 EXPRE_POS	*e;
 int	k,l;
 {
-int	i, m;
-char	*c1, *c2, *p;
-char	d;
+    int	i, m;
+    char	*c1, *c2, *p;
+    char	d;
 
 
    zera_expre(&aux_expre);
@@ -311,7 +318,7 @@ char	d;
 	   case OP_ASS_BIT:
 	   case OP_ASS_PLAIN:
 	   case OP_ASS_SHIFT:
-		l2:
+l2:
 		strcpy(bufaux, "(");
 		strcat(bufaux, NOME((&aux_expre), aux_expre.topo-1));
 		strcat(bufaux, " ");
@@ -367,7 +374,7 @@ char	d;
 		        {
 			   c1 = "(";
 			   c2 = ")";
-			   l1:
+l1:
 			   strcpy(bufaux, NOME((&aux_expre), aux_expre.topo-1));
 			   strcat(bufaux, c1);
 			   strcat(bufaux, NOME((&aux_expre), aux_expre.topo));
@@ -378,8 +385,7 @@ char	d;
 							strlen(bufaux) + 1;
 			   aux_expre.no[aux_expre.topo].tipo = SUB_EXPRE;
 			}
-		    else 
-		if (strcmp(NOME(e, i), "]") == 0)
+            else if (strcmp(NOME(e, i), "]") == 0)
 		        {
 			   c1 = "[";
 			   c2 = "]";
@@ -429,8 +435,8 @@ expre_e_referencia(e, i)
 int	i;
 EXPRE_POS	*e;
 {
-int	j;
-char	*p;
+    int	j;
+    char	*p;
 
    j = e->no[i].tipo;
    p = NOME(e, i);
@@ -447,8 +453,8 @@ int	root_of_ref(e, i)
 int     i;
 EXPRE_POS       *e;
 {
-int j;
-char *p;
+    int j;
+    char *p;
 
    switch(e->no[i].tipo)
    {
@@ -471,7 +477,40 @@ char *p;
 
 
 
+/***************************************************************************
+EXPRE_RELOAD_NOP:
+   Os NOPs só funcionam se estiverem abaivo de uma variavel ou constante.
+   Por isso, move os NOPs para baixo e os operandos/operadores para cima
+   ate achar um variavel/constante
+****************************************************************************/
+expre_reload_NOP(e, i)
+int	i;
+EXPRE_POS	*e;
+{
+int j = i;
 
+    while ( j >= 0 && e->no[j].tipo == NOP ) j--;
+
+    while ( j  > 0 && e->no[j].tipo != VARIAVEL &&
+            e->no[j].tipo != CAMPO &&
+            e->no[j].tipo != CONST_INT &&
+            e->no[j].tipo != CONST_ENUM &&
+            e->no[j].tipo != CONST_FLOAT &&
+            e->no[j].tipo != CONST_CHAR &&
+            e->no[j].tipo != STRING &&
+            e->no[j].tipo != NOME_TIPO &&
+            e->no[j].tipo != OP_0_ARGUMENTO )
+    {
+        e->no[i] = e->no[j];
+        e->no[j].tipo    = NOP;
+        i--; j--;
+    }
+    if ( j >= 0 )
+    {
+        e->no[i] = e->no[j];
+        e->no[j].tipo = NOP;
+    }
+}
 
 
 /****************************************************************************
@@ -484,7 +523,7 @@ int	i;
 EXPRE_POS	*e;
 char	*tipo, *ptar;
 {
-int	t;
+    int	t;
 
    t = e->no[i].final;	/* acha fim da sub_expressao */
    *tipo = *ptar = '\0';
@@ -507,7 +546,7 @@ int	i;
 EXPRE_POS	*e;
 char	*tipo, *ptar;
 {
-int	t;
+    int	t;
 
    t = e->no[i].final;	/* acha fim da sub_expressao */
    *tipo = *ptar = '\0';
@@ -531,7 +570,7 @@ int	i;
 EXPRE_POS	*e;
 char	*tipo, *ptar;
 {
-int	t;
+    int	t;
 
    t = e->no[i].final;	/* acha fim da sub_expressao */
    *tipo = *ptar = '\0';
@@ -556,7 +595,7 @@ int	i;
 EXPRE_POS	*e;
 char	*tipo, *ptar;
 {
-int	t;
+    int	t;
 
    t = e->no[i].final;	/* acha fim da sub_expressao */
    *tipo = *ptar = '\0';
@@ -586,7 +625,7 @@ int	i;
 char	*p;
 TIPO_NO	t;
 {
-int	k, j, l, f;
+    int	k, j, l, f;
 
    k = e->no[i].final;	/* acha fim da sub_expressao */
    for (j = k; j < i; j++)  /* acha tamanho da expressao (nome) */
@@ -602,7 +641,8 @@ int	k, j, l, f;
 		e->no[i].nome = e->livre;
 		e->livre += l+1;
 	    }
-      else  {
+    else
+    {
 		strcpy(&(e->buf[j]), p);
 		e->no[i].nome = j;
 		j += l+1;
@@ -630,8 +670,10 @@ completa(e, t)
 EXPRE_POS	*e;
 int	t;
 {
-int	i = t;
+    int	i = t;
 
+//    printf("Topo: %d\n", t);
+//    print_sub_expre(e,t);
    switch (e->no[t].tipo)
      {
 	   case VARIAVEL:
@@ -691,7 +733,7 @@ EXPRE_POS	*e;
 int	k,l;
 char	*tipo, *ptar;
 {
-int	t;
+    int	t;
 
    *tipo = *ptar = '\0';
    if (exec_tipo(e, k, l) == ERRO)
@@ -713,7 +755,7 @@ EXPRE_VALIDA:
 expre_valida(e)
 EXPRE_POS	*e;
 {
-int	i, t;
+    int	i, t;
 
    expre_completa(e);
    for (i = 0; i <= e->topo; i++)
@@ -729,7 +771,7 @@ int	i, t;
 			     return FALSE;
 		break;
 	   case OP_1_REF:
-		l1:
+l1:
 		if (! expre_e_referencia(e, i-1))
 			     return FALSE;
 		break;
@@ -755,7 +797,7 @@ EXPRE_POS	*e;
 int	k;
 char	*f;
 {
-int	i, j;
+    int	i, j;
 
    for (i = k+1; i <= e->topo; i++)
    {
@@ -787,7 +829,7 @@ int	get_nth_param(e, j, k)
 EXPRE_POS       *e;
 int     j, k;
 {
-int i, r;
+    int i, r;
 
    r = e->no[--j].final;
    switch (e->no[j].tipo)
@@ -795,7 +837,8 @@ int i, r;
 	case OP_0_ARGUMENTO:
 	   return -1;
 	case OP_2_ARGUMENTO:
-	   j--; i = e->no[j].final-1;
+        j--;
+        i = e->no[j].final-1;
 	   while (i > r && e->no[i].tipo == OP_2_ARGUMENTO)
 	   {
 	     if (k == 1)
@@ -806,8 +849,7 @@ int i, r;
 	   }
 	   if (k == 1)
 		return j;
-	   else
-	   if (k == 2)
+        else if (k == 2)
 		return e->no[j].final - 1;
 	   else
 		return -1;
@@ -822,14 +864,15 @@ int	get_max_param(e, j)
 EXPRE_POS       *e;
 int     j;
 {
-int	i, k;
+    int	i, k;
 
    i = e->no[--j].final;
    if (e->no[j].tipo == OP_0_ARGUMENTO)
 	return 0;
    if (e->no[j].tipo != OP_2_ARGUMENTO)
 	return 1;
-   j--; k = 0;
+    j--;
+    k = 0;
    while (j >= i)
    {
 	j = e->no[j].final -1;
@@ -845,7 +888,7 @@ expre_change_places(e, from, to)
 EXPRE_POS *e;
 int	to, from;
 {
-int	i, j, t, f;
+    int	i, j, t, f;
 
    aux_expre = *e;
    if (from > to )
@@ -871,5 +914,27 @@ int	i, j, t, f;
    {
         e->no[j--] = aux_expre.no[i--];
    }
+}
+
+int eh_operador(TIPO_NO k)
+{
+    return eh_operador_unario(k) || eh_operador_binario(k);
+}
+
+int eh_operador_unario(TIPO_NO k)
+{
+    return k == OP_1_ARIT || k == OP_1_LOG || k == OP_1_BIT;
+}
+
+int eh_operador_binario(TIPO_NO k)
+{
+    return k == OP_2_ARIT || k == OP_2_LOG || k == OP_2_BIT ||
+           k == OP_2_RELA || k == OP_2_SHIFT;
+}
+
+/* This does not include plain assignment */
+int eh_op_assign(TIPO_NO k)
+{
+    return k == OP_ASS_ARIT || k == OP_ASS_BIT || k == OP_ASS_SHIFT;
 }
 

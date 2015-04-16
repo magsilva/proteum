@@ -57,7 +57,7 @@ int     i, j, n, max, seq, nseq, pmax, l;
 int     u, k, pinic, pfim, pinic1, pfim1, t;
 OSET	*r, *p, *monta_pset();
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

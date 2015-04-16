@@ -48,7 +48,7 @@ u_sdwd(LI_SIMBOLO *sdo , LI_SIMBOLO *scoman,
 int i;
 
     Operador = U_SDWD;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
    add_descritor(sdo->inicio, sdo->comprimento, sdo->no, "while");
    carrega_fonte(bufmen, scond);	/* carrega fonte da condicao */
@@ -70,7 +70,7 @@ u_swdd(LI_SIMBOLO *swhile , LI_SIMBOLO *scond, LI_SIMBOLO *scoman)
 {
 
    Operador = U_SWDD;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
    add_descritor(swhile->inicio, swhile->comprimento, swhile->no, "do");
    add_descritor(scond->inicio, scond->comprimento, scond->no, "");

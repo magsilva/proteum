@@ -41,7 +41,7 @@ u_smtc(LI_SIMBOLO *sdo , LI_SIMBOLO *scoman,
 {
 
     Operador = U_SMTC;
-   if (g_tab_operador[Operador].percent != 0)
+   if (g_tab_operador[Operador].percentage != 0.0)
    {
    add_descritor(sdo->inicio, 0, sdo->no, "{ int _PROTEUM_LOCAL_VAR_ = 1; "  );
    add_descritor(scoman->inicio, 0, scoman->no, " { FALSE_AFTER_N_INTER(2); ");
@@ -51,7 +51,7 @@ u_smtc(LI_SIMBOLO *sdo , LI_SIMBOLO *scoman,
    Seq[Operador]++;
    }
     Operador = U_SMTT;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
    add_descritor(sdo->inicio, 0, sdo->no, "{ int _PROTEUM_LOCAL_VAR_ = 1; "  );
    add_descritor(scoman->inicio, 0, scoman->no, " { TRAP_AFTER_N_INTER(2); ");

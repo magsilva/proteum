@@ -25,17 +25,19 @@
 
 *************************************************************************/
 
-#define		NOPERADORES	108 /* Numero de Operadores*/
+#define		NOPERADORES	111 /* Numero de Operadores*/
 
 typedef	struct	{
 		   char		*nome;		/* mnemonico do op. */
 		   char		*coment;	/* explicacao */
 		   int		use_trace; 	/* diz se deve usar trace */
-		   char		percent;	/*percentual a gerar */
+		   double	percentage;	/*percentual a gerar */
 		   int		maximum;	/* maximum per point */
-		   unsigned	long	semente,
+		   long	int semente,
 					semente2;/*usada pra geracao aleatoria*/
 		   int		(*func_gera)();	/* funcao para geracao */
 		} OPERADOR_MUTACAO;
 
 
+void shufle();
+void init_sort();

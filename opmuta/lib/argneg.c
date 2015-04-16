@@ -55,7 +55,7 @@ void ArgNeg(char *pre, char *pos)
 int     i, j, n;
 int     u, k, pinic, pfim, t;
 
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
 
    u = sym.no;

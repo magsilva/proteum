@@ -134,5 +134,80 @@ int     dequal, atequal, mmaximo, nmaximo, keep;
 }
 
 
+/***************************************************************************
+INVERT_MUTANTE:
+        Esta funcao inverte o estado seleceionado/nao selecionado de cada
+mutante
 
+
+Autor: MArcio Delamaro
+Data: 18-03-2013
+
+***************************************************************************/
+inverte_mutante(HMuta, dequal, atequal)
+HAND_MUTANTE	*HMuta;
+int	dequal, atequal;
+{
+    int	i, j;
+
+    if (GERADOS(HMuta) == 0)
+        msg("No Mutants to Select");
+
+    i = dequal;
+    while (i < atequal)
+    {
+        if (carrega_descr(HMuta, i) == ERRO)
+            return;
+        if (get_mutante_inactive(HMuta))
+            j = 0;
+        else
+            j = 1;
+        set_mutante_inactive(HMuta,j);
+        i++;
+        rewrite_mutante(HMuta);
+    }
+
+    atualiza_mutantes(HMuta);
+}
+
+
+/***************************************************************************
+sele_by_number
+    Seleciona apenas os mutantes cujos numeros são passados como Parametros
+
+***************************************************************************/
+sele_by_number(HMuta, dequal, atequal, vet, qtos)
+HAND_MUTANTE	*HMuta;
+int	dequal, atequal, qtos;
+int vet[];
+{
+int k, i;
+
+   if (GERADOS(HMuta) == 0)
+        msg("No Mutants to Select");
+
+    i = dequal;
+    while (i < atequal)
+    {
+        if (carrega_descr(HMuta, i) == ERRO)
+            break;
+        set_mutante_inactive(HMuta,INATIVO);
+        i++;
+        rewrite_mutante(HMuta);
+    }
+
+    i = 0;
+    while (i < qtos)
+    {
+        k = vet[i];  // pega o numero do mutante para ativar
+        if (carrega_descr(HMuta, k) == ERRO)
+            msg("Invalid mutant number. Option -x.");
+
+        set_mutante_inactive(HMuta, 0);
+        i++;
+        rewrite_mutante(HMuta);
+    }
+
+    atualiza_mutantes(HMuta);
+}
 

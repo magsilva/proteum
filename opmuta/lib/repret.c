@@ -78,7 +78,7 @@ char    *q, *get_rand();
 OSET    *r, *p, *monta_pset();
 
    Operador = REP_RET_STAT;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
    max = g_tab_operador[Operador].maximum;
    if (max == 0) max--;

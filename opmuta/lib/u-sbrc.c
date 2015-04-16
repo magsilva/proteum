@@ -48,7 +48,7 @@ extern	OPERADOR_MUTACAO g_tab_operador[];
 u_scrb()
 {
     Operador = U_SCRB;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
     add_descritor(sym.inicio, sym.comprimento, sym.no, "break;");
     sorteia_grupoU(Operador, Seq[Operador]);
@@ -58,7 +58,7 @@ u_scrb()
 u_sbrc()
 {
     Operador = U_SBRC;
-   if (g_tab_operador[Operador].percent == 0)
+   if (g_tab_operador[Operador].percentage == 0.0)
         return;
     add_descritor(sym.inicio, sym.comprimento, sym.no, "continue;");
     sorteia_grupoU(Operador, Seq[Operador]);

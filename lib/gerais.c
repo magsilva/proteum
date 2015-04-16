@@ -239,10 +239,10 @@ isempty(char str[])
 	int i;
 	for (i = 0; i < strlen(str); i++) {
 		if (! isspace(str[i])) {
-			return ERRO;
+			return FALSE;
 		}
 	}
-	return OK;
+	return TRUE;
 }
 
 /*************************************************************************
@@ -1055,21 +1055,22 @@ LeArqOp(char dir[], char file[], OPERADOR_MUTACAO tab[])
 {
 	FILE    *fp;
 	char    strop[10];
-	int     x, i, max;
+	int     x, i;
+	double  max;
 
 	fp = abrearq(dir, file, "", 0);
 	if (fp == NULL) {
 		fprintf(stderr, "Invalid operator file %s", file);
 		return ERRO;
 	}
-	while (fscanf(fp, "%s %d %d", strop, &x, &max) == 3) {
+	while (fscanf(fp, "%s %lf %d", strop, &x, &max) == 3) {
 		i = busca_op(strop);
 		if (i >= 0) {
 			do {
-				if (x >= 0 && x <= 100) {
-					tab[i].percent = x;
+				if (x >= 0.0 && x <= 1.0) {
+					tab[i].percentage = x;
 				} else {
-					fprintf(stderr, "Invalid percentage for operator %i in the file %s: %d", i, file, x);
+					fprintf(stderr, "Invalid percentage for operator %i in the file %s: %lf", i, file, x);
 					return ERRO;
 				}
 				tab[i].maximum = max;
@@ -1109,4 +1110,27 @@ char *p, *c;
 }
 
 
+/*----------------------------------------------------------------------------
+SHUFLE:
+Embaralha alearoriamente os elementos de um vetor
+Parametros:
+   o vetor
+   semente a ser usada na geração aleatoria
+Author: Delamaro 10/jul/2013
+----------------------------------------------------------------------------*/
+void shufle(int v[], long seed, int n)
+{
+    int i, aux;
+    long int k;
 
+    srandom(seed);
+    for (i = n - 1; i > 1; i--)
+    {
+        long int k;
+        k = random();
+        k %= i;
+        aux = v[i];
+        v[i] = v[k];
+        v[k] = aux;
+    }
+}

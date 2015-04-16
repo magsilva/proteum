@@ -61,7 +61,7 @@ u_oipm(char *pre, char *pos)
 
  Operador = U_OIPM;
 
- if (g_tab_operador[Operador].percent == 0) return;
+ if (g_tab_operador[Operador].percentage == 0.0) return;
 
  set_new_inic(&r, "++\0--\0");
 

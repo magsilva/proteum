@@ -139,9 +139,16 @@ int last_size;
 /*   last atualization: 08/26/96
 /*-----------------------------------------------------------------------------*/
 
+extern int g_nootimize;
 
 void write_pp (long func, int node, char *str)
 {
+    if ( g_nootimize && node == 1 )
+        fprintf (fp_instrum, "\nextern long __level__; long __ll__ = __level__++;\n");
+
+   if (g_nootimize)
+        fprintf (fp_instrum, "ponta_de_prova (%ld, __ll__, %d)%s", func, node, str);
+   else
    fprintf (fp_instrum, "ponta_de_prova (%ld, %d)%s", func, node, str);
    fflush (fp_instrum);
 }
@@ -274,7 +281,30 @@ function()
    if ( ! e_abre(symbol) )
 	sint_error();
    curnode = 0;
-   comp_stat();
+
+//   comp_stat();
+
+   indent();
+   put_sym();
+   getsymbol();
+   while ( e_dcl(symbol) )
+	declaration();
+
+	// garante que pp(1) aparece
+   write_pp(curfunction, curnode = 1, ";");
+
+
+   while ( ! e_fecha(symbol))
+	statement();
+   if (node != curnode)
+   {
+	write_pp(curfunction, node, ";");
+	curnode = node;
+   }
+   indent();
+   put_sym();
+   getsymbol();
+
 }
 
 /*-----------------------------------------------------------------------------*/
@@ -291,13 +321,14 @@ comp_stat()
    getsymbol();
    while ( e_dcl(symbol) )
 	declaration();
+/*
    if (node != curnode)
    {
 	write_pp(curfunction, node, ";");
 	curnode = node;
    }
 
-
+*/
    while ( ! e_fecha(symbol))
 	statement();
    if (node != curnode)
@@ -509,9 +540,19 @@ int k;
 while_stat()
 {
 int k;
+
    k = FALSE;
    indent();
+   if (node != curnode)
+   {
+	write_pp(curfunction, node, "; " );
+	curnode = node;
+   }
+
+   indent();
    put_sym();
+   getsymbol();
+
    if (node != curnode)
    {
 	put_str(" ( ");
@@ -519,7 +560,6 @@ int k;
 	curnode = node;
 	k = TRUE;
    }
-   getsymbol();
    if ( ! e_cond(symbol) )
 	sint_error();
 
@@ -736,3 +776,26 @@ create_func_pp (char *outname, char dir[], char file[])
 
 
  
+/*-----------------------------------------------------------------------------*/
+/*
+/*
+/*   date: 08/26/2013
+/*   last atualization: 08/26/96
+/*-----------------------------------------------------------------------------*/
+
+create_func_pp2 (char *outname, char dir[], char file[])
+{
+   FILE *fp_pp;
+
+   if ((fp_pp = criarq (dir, file, SUFIXO_PP)) == NULL) {
+      return FALSE;
+   }
+
+
+   fprintf(fp_pp, "#include	<stdio.h>\n#include	<instrument.h>\n\nlong __level__ = 0;\n\nint ponta_de_prova (long func, long level, int node)\n{\nstatic FILE *fp=NULL;\nstatic long lf, levelf;\n\n   \
+   if (fp == NULL) {\n	fp = fopen (\"\%s\", \"w+\");\n	if (fp == NULL) {\n	   perror (\"Error creating log file\");\n	   exit (1);\n 	}   }\n\
+   if (lf != func || levelf != level)\n	   fprintf (fp, \"\\n%%ld %%ld \", -(lf = func), levelf = level );\n   	fprintf (fp, \" %%d\", node);\n	fflush(fp);\n   return 1;\n}\n\n\n", outname);
+
+   fclose (fp_pp);
+}
+

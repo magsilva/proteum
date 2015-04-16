@@ -34,10 +34,6 @@
 #	include <errno.h>
 #	include	<grp.h>
 #	define	INFTIM	-1
-#else
-#	include	<poll.h>
-#	include	<stropts.h>
-#	include	<sys/filio.h>
 #endif
 #include	<stdio.h>
 #include	<errno.h>
@@ -225,7 +221,7 @@ pid_t pid, pipe_fork();
     {
 	 tt1 = gettimedad();
 	 fim_le = FALSE;
-
+	 c = 0;
 	 while ( waitpid(pid, &c, WNOHANG) != pid )
 	 {
 	    bytes = 0;
@@ -449,7 +445,7 @@ struct  tms xtms;
     {
 	 tt1 = times(&xtms);
 	 fim_le = FALSE;
-
+	 c = 0;
 	 while ( waitpid(pid, &c, WNOHANG) != pid )
 	 {
 	    bytes = 0;

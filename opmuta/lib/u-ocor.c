@@ -70,7 +70,7 @@ u_ocor(char *pre, char *pos)
  por = OP_1_CAST;
 
  Operador = U_OCOR;
- if (g_tab_operador[Operador].percent==0) return;
+ if (g_tab_operador[Operador].percentage == 0.0) return;
 
   set_new_inic(&r,"char\0unsigned char\0int\0float\0unsigned\0unsigned int\0short\0short int\0long\0long int\0unsigned long\0unsigned long int\0double\0long float\0");
 

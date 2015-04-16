@@ -37,6 +37,9 @@ char	ArqLi[NOME_LENGTH+1];
 
 int 	*hexpression;
 
+
+extern int flg_no_empty;
+
 main(argc, argv)
 int	argc;
 char	*argv[];
@@ -66,6 +69,13 @@ char	*getenv(), *p, *get_func_loc();
 	if (strcmp(argv[i], "-l") == 0)
 	{
 	   Menosl = TRUE;
+	   argv[i] = "";
+           n--;
+	}
+	else
+	if (strcmp(argv[i], "-noempty") == 0)
+	{
+	   flg_no_empty = TRUE;
 	   argv[i] = "";
            n--;
 	}

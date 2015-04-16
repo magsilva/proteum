@@ -86,14 +86,19 @@ extern	int	flg_interrup;
 char	*monta_nome();
 
 
-executa_mutante(g_timeout, dequal, atequal, max, verbose, uselog, dual)
+executa_mutante(g_timeout, dequal, atequal, max, verbose, uselog, dual, order_tcase)
 int	g_timeout, dequal, atequal, uselog, max, dual;
+int order_tcase[]; // ordem em que os casos de teste devem ser executados
+                   // se for null, ordem em que eles aparecem. o vetor tem
+                   // o numero dos casos de teste por exemplo 5,4,3,2,1 executa
+                   // na ordem inversa
+
 char	*verbose;
 {
 char	*p, *q, *r, *s,
 	*monta_exec(),
 	*monta_n_mutante();
-int	i, j, k, t, z1, cont, grancont, to_exec, vet_exec[100];
+int	i, jz, k, t, z1, cont, grancont, to_exec, vet_exec[100];
 DWORD	last_tcase;
 
    if (GERADOS(&HMuta) == 0)
@@ -147,8 +152,12 @@ DWORD	last_tcase;
 	   q = r;
 
 		/*--------------- Executa o mutante com cada caso de teste---------------*/
-		for (j = 1; j <= NTCASE(&HTCase) && (status == VIVO || (status == MORTO && pteste_cab.tipo == T_RESEARCH)); j++) {
-			k = ltofis_tcase(&HTCase, j);
+		for (jz = 1; jz <= NTCASE(&HTCase) && (status == VIVO || (status == MORTO && pteste_cab.tipo == T_RESEARCH)); jz++) {
+			if (order_tcase == NULL) {
+				k = ltofis_tcase(&HTCase, jz);
+			} else {
+				k = ltofis_tcase(&HTCase, order_tcase[jz-1]);
+			}
 
 			/* Se caso de teste estiver desabilitado ou ja foi executado, nao executa */
 			if (TAB_FIS(&HTCase)[k].desabili || get_bitmap(REG(&HMuta).tcase, k) != NO_EXEC) {

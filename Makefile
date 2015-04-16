@@ -267,7 +267,7 @@ $(OBJ)/libopmuta.o: $(OBJ)/mutgera.o $(OBJ)/glob.o $(OBJ)/opmuta.o \
         $(OBJ)/u-vsrr.o $(OBJ)/u-vprr.o $(OBJ)/u-vscr.o $(OBJ)/u-vtrr.o \
         $(OBJ)/u-sglr.o $(OBJ)/u-vdtr.o $(OBJ)/u-smtc.o $(OBJ)/u-stri.o \
         $(OBJ)/u-sdwd.o $(OBJ)/u-sbrn.o $(OBJ)/u-sswm.o $(OBJ)/u-scrn.o \
-        $(OBJ)/u-smvb.o
+        $(OBJ)/u-smvb.o $(OBJ)/u-oodl.o $(OBJ)/u-vvdl.o $(OBJ)/u-ccdl.o
 	$(LD) $(LFLAGS) $(OBJ)/mutgera.o $(OBJ)/glob.o $(OBJ)/opmuta.o \
 		$(OBJ)/fase1.o $(OBJ)/fase2.o $(OBJ)/loadfunc.o $(OBJ)/tmpcon.o  \
 		$(OBJ)/reqcons.o $(OBJ)/reparg.o $(OBJ)/argincr.o $(OBJ)/argneg.o \
@@ -281,7 +281,8 @@ $(OBJ)/libopmuta.o: $(OBJ)/mutgera.o $(OBJ)/glob.o $(OBJ)/opmuta.o \
 	        $(OBJ)/u-vsrr.o $(OBJ)/u-vprr.o $(OBJ)/u-vscr.o $(OBJ)/u-vtrr.o \
 	        $(OBJ)/u-sglr.o $(OBJ)/u-vdtr.o $(OBJ)/u-smtc.o $(OBJ)/u-stri.o \
 	        $(OBJ)/u-sdwd.o $(OBJ)/u-sbrn.o $(OBJ)/u-sswm.o $(OBJ)/u-scrn.o \
-	        $(OBJ)/u-smvb.o -o $(OBJ)/libopmuta.o
+		$(OBJ)/u-smvb.o $(OBJ)/u-oodl.o $(OBJ)/u-vvdl.o $(OBJ)/u-ccdl.o	\
+		-o $(OBJ)/libopmuta.o
 
 
 $(OBJ)/mutgera.o: $(OPMUTA)/mutgera.c $(INCLUDEFILE)
@@ -442,7 +443,16 @@ $(OBJ)/u-sswm.o: $(OPMUTA)/u-sswm.c $(INCLUDEFILE)
 $(OBJ)/u-smvb.o: $(OPMUTA)/u-smvb.c $(INCLUDEFILE)
 	$(CC) $(CFLAGS) $(OPMUTA)/u-smvb.c -o $(OBJ)/u-smvb.o
 
-util: muta-gen test-new tcase-add muta-view list-good
+$(OBJ)/u-oodl.o: $(OPMUTA)/u-oodl.c $(INCLUDEFILE)
+	$(CC) $(CFLAGS) $(OPMUTA)/u-oodl.c -o $(OBJ)/u-oodl.o
+
+$(OBJ)/u-vvdl.o: $(OPMUTA)/u-vvdl.c $(INCLUDEFILE)
+	$(CC) $(CFLAGS) $(OPMUTA)/u-vvdl.c -o $(OBJ)/u-vvdl.o
+
+$(OBJ)/u-ccdl.o: $(OPMUTA)/u-ccdl.c $(INCLUDEFILE)
+	$(CC) $(CFLAGS) $(OPMUTA)/u-ccdl.c -o $(OBJ)/u-ccdl.o
+
+util: muta-gen test-new tcase-add muta-view list-good info-muta
 	# Building util
 
 
@@ -464,8 +474,10 @@ muta-view: $(UTIL)/muta-viw.c $(INCLUDEFILE)  $(OBJ)/libmuta.o \
 list-good: $(UTIL)/list-good.c $(INCLUDEFILE)  $(OBJ)/libmuta.o $(OBJ)/libpteste.o $(OBJ)/libtcase.o lib
 		$(CC) $(CLFLAGS) $(UTIL)/list-good.c $(OBJ)/libmuta.o $(OBJ)/libgerais.o $(OBJ)/libtcase.o $(OBJ)/libpteste.o  -o $(BIN)/list-good
   
+info-muta: $(UTIL)/info-muta.c
+		$(CC) $(CLFLAGS) $(UTIL)/info-muta.c -o $(BIN)/info-muta
 
-misc: headtail extimout splitarg recinput
+misc: headtail extimout splitarg recinput testrand
 	# building auxiliar programs
 
 splitarg: $(MISC)/splitarg.c $(INCLUDEFILE) $(OBJ)/libmuta.o
@@ -476,6 +488,10 @@ headtail: $(MISC)/headtail.c $(INCLUDEFILE) $(OBJ)/libmuta.o
 
 recinput: $(MISC)/recinput.c $(INCLUDEFILE) $(OBJ)/libmuta.o
 	$(CC) $(CLFLAGS) $(MISC)/recinput.c $(OBJ)/libgerais.o -o $(BIN)/recinput
+
+testrand: $(MISC)/testrand.c $(INCLUDEFILE) 
+	$(CC) $(CLFLAGS) $(MISC)/testrand.c $(OBJ)/globais.o \
+	-o $(BIN)/testrand
 
 
 extimout: $(MISC)/extimout.c  
@@ -510,4 +526,5 @@ clean:
 	rm -f $(OS)/bin/pteste     
 	rm -f $(OS)/bin/splitarg  
 	rm -f $(OS)/bin/test-new
-
+	rm -f $(OS)/bin/info-muta
+	rm -f $(OS)/bin/testrand

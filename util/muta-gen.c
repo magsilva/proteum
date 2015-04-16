@@ -123,7 +123,7 @@ int	n, i;
 
 
 	if  (strcmp(argv[i], "-O") == 0   || strcmp(argv[i], "-DD") == 0 ||
-		strcmp(argv[i], "-unit") == 0) 
+		strcmp(argv[i], "-unit") == 0 || strcmp(argv[i], "-seed") == 0) 
 	{
 		strcat(BufPar, " ");
 		strcat(BufPar, argv[i]);
