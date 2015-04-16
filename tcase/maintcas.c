@@ -18,13 +18,13 @@
 */
 
 
-#include	<string.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include	<lib/gerais.h>
-#include	"lib/tcase.h"
+#include <lib/gerais.h>
+#include "lib/tcase.h"
 
 extern char *from_buf();
 
@@ -810,28 +810,26 @@ ZapTcase(int argc, char *argv[])
 int
 AddTcase(int argc, char * argv[])
 {
-	int	i, MenosDD, MenosDE, MenosE, MenosEE, n;
+	int i, n;
 	char *c;
 
-	MenosDD = MenosDE = MenosE = MenosEE = enableTrace = FALSE;
 	Parametros[0] = '\0';
-
 	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
-	        exit(1);
+	        return ERRO;
 	}
 
 	if ( Menosinter) {
 		if (tcase_ex_inter(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros, SHELL) == ERRO) {
-			exit(1);
+			return ERRO;;
 		}
 	} else {
 		if (tcase_ex_bat(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros) == ERRO) {
-			exit(1);
+			return ERRO;
 		}
 	}
 
  	if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), 20,  enableTrace, SHELL, Menosinter) == ERRO ) {
-		exit(1);
+		return ERRO;
 	}
 	TREG(&testSet).interativo = Menosinter;
 
@@ -845,7 +843,7 @@ AddTcase(int argc, char * argv[])
 	}
 	strcpy(TREG(&testSet).label, Label);
 	if (insere_tcase(&testSet,  enableTrace) == ERRO) {
-                exit(1);
+                return ERRO;
 	}
 
 	descarrega_arquivo_tcase(&testSet);
@@ -931,22 +929,22 @@ main(int argc, char *argv[])
 			printf("\nSet command line parameters to %s", Parametros);
 		} else if (strcmp(argv[i], "-f") == 0) {
 			firstMutant = MAXI(atoi(argv[i+1]), 0);
+			firstTestCase = firstMutant;
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet initial test case to %d", firstMutant);
+			printf("\nSet initial test case and mutant to %d", firstMutant);
 		} else if (strcmp(argv[i], "-t") == 0) {
 			lastMutant = MINI(atoi(argv[i+1]), MAX_TCASE);
+			lastTestCase = lastMutant;
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet final test case to %d", lastMutant);
+			printf("\nSet final test case and mutant to %d", lastMutant);
 		} else if (strcmp(argv[i], "-v") == 0) {
 	                verbosityChar = *argv[i+1];
 			argv[i] = "";
 			argv[i+1] = "";
 			printf("\nSet progress symbol to %c", verbosityChar);
 	        }
-
-
 	}
 
 	for (i = 2; i < argc-1; i++) {
