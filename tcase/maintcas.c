@@ -31,83 +31,70 @@ extern char *from_buf();
 /**
  * Current test set.
  */
-HAND_TCASE	testSet;
+HAND_TCASE testSet;
 
 /**
  * Name of the test session. Files regarding this session will be named as
  * such (and suffixed with proper file extensions, depending upon the data
  * each file holds).
  */
-char	ArqTeste[NOME_LENGTH+1] = "";
+char testSessionName[NOME_LENGTH+1] = "";
 
 /**
  * Current working directory. This can be changed using the option -D at the
  * command line.
  **/
-char 	DirCorrente[NOME_LENGTH + 1] = "";
+char workingDir[NOME_LENGTH + 1] = "";
 
 /**
  * Directory for the executable file.
  */
-char DirExec[NOME_LENGTH+1] = "";
+char executableDir[NOME_LENGTH+1] = "";
 
 /**
  * Name of the executable file.
  */
-char ArqExec[NOME_LENGTH+1] = "";
+char executableFilename[NOME_LENGTH+1] = "";
 
 /**
  * Name of the instrumented executable file.
  */
-char ArqInstrum[NOME_LENGTH+1] = "";
+char instrumentedExecutableFilename[NOME_LENGTH+1] = "";
 
 /**
  * Directory from which files with test cases should be imported from.
  */
-char DirImport[NOME_LENGTH+1] = "";
+char testCaseImportDir[NOME_LENGTH+1] = "";
 
 /**
  * Prefix for filenames with test cases to be imported. Every filename
  * has this prefix and a number (usually sequential, from the
  * initialTestCase to finalTestCase).
  */
-char ArqImport[NOME_LENGTH+1] = "";
+char testCaseInputDataImportFilename[NOME_LENGTH+1] = "";
 
 /**
  * Prefix for filenames with command line parameters to be used for each
  * test case. Every filename has this prefix and a number (usually sequential,
  * from the initialTestCase to finalTestCase).
  */
-char ArqParam[NOME_LENGTH+1] = "";
-
-/**
- * Command line parameters to be used with the software under testing when
- * running it with the test cases.
- */
-char Parametros[PARAMSIZE] = "";
+char testCaseParametersImportFilename[NOME_LENGTH+1] = "";
 
 /**
  * Label to be used for each imported test cases.
  */
 char Label[LABELSIZE] = "";
 
-int Menosinter;
+/**
+ * Define if the program under testing is interactive, ie, it requires
+ * user input while running.
+ */
+int isInteractive = 0;
 
 /**
  * Control the generation of trace information when running test cases.
  */
 int enableTrace = 0;
-
-/**
- * Index number for the first mutant to be executed against test set.
- */
-int firstMutant = -1;
-
-/**
- * Index number for the last mutant to be executed against test set.
- */
-int lastMutant = -1;
-
 
 /**
  * Index number for the first file from which test cases should be imported from.
@@ -137,8 +124,8 @@ setupWorkDir(char directory[])
 {
 	struct stat sb; 
 	if (stat(directory, &sb) == 0 && S_ISDIR(sb.st_mode)) {
-		strcpy(DirCorrente, directory);
-		chdir(DirCorrente);
+		strcpy(workingDir, directory);
+		chdir(workingDir);
 		return OK;
 	}
 	return ERRO;
@@ -151,7 +138,7 @@ setupWorkDir(char directory[])
 int
 setupTestSession(char sessionName[])
 {
-	strcpy(ArqTeste, sessionName);
+	strcpy(testSessionName, sessionName);
 }
 
 
@@ -163,7 +150,7 @@ int
 CreateTcase(int argc, char *argv[])
 {
 	// Create file with empty test set
-	if (cria_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO || descarrega_arquivo_tcase(&testSet) == ERRO) {
+	if (cria_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO || descarrega_arquivo_tcase(&testSet) == ERRO) {
 		msg("Could not create file with test set");
 		return ERRO;
 	}
@@ -183,150 +170,134 @@ CreateTcase(int argc, char *argv[])
 int
 ListTcase(int argc, char *argv[])
 {
-int	Menosx;
-static	int VetMenosx[MAX_TCASE];
-int	Menosl, Menose, Menosi, Menosp, Menosd;
-int	f, i,j, k, n, t;
-char	*Lista;
+	int useTCList = 0;
+	int tcList[MAX_TCASE];
+	int tcListSize = 0;
+	int tcNumber;
+	int showTestCases = FALSE;
+	int enableTestCases = FALSE;
+	int disableTestCases = FALSE;
+	int deleteTestCases = FALSE;
+	int i, k;
+	char *Lista;
 
-
-   firstMutant = lastMutant = Menosp = FALSE;
-   f = MAX_TCASE;
-   t = 1;
-
-  firstMutant = (firstMutant || lastMutant);
-
-
-
-   Menosx = 0;
-   for (i = 2; i < argc-2; i++)
-   {
-	if (strcmp(argv[i], "-x") == 0)
-	{
-	   if (firstMutant == -1 && lastMutant == -1)
-	   {
-		msg("Invalid conbination of -t or -f and -x");
-		return;
-	   }
-	   Lista = argv[i+1];
-	   do {
-		while (isspace(*Lista)) Lista++;
-		k = 0;
-		if (*Lista != '\0')
-		{
-		    while (isdigit(Lista[k])) k++;
-		    if (k > 0 && (isspace(Lista[k]) || Lista[k] == '\0'))
-		    {
-			sscanf(Lista, "%d", &j);
-			if ( ! firstMutant != -1 || (j < lastMutant || j > firstMutant))
-			   if (Menosx < LEN(VetMenosx))
-			   	VetMenosx[Menosx++] = j;
-			   else
-				msg("Maximum list size exceded");
-		    }
-		    else
-		    {
-			msg("Invalid argument -x");
-			goto fim;
-		    }
+	for (i = 2; i < argc-2; i++) {
+		if (strcmp(argv[i], "-x") == 0) {
+			useTCList = 1;
+			Lista = argv[i+1];
+			do {
+				while (isspace(*Lista)) {
+					Lista++;
+				}
+				k = 0;
+				if (*Lista != '\0') {
+					while (isdigit(Lista[k])) {
+						k++;
+					}
+					if (k > 0 && (isspace(Lista[k]) || Lista[k] == '\0')) {
+						if (sscanf(Lista, "%d", &tcNumber) == 1) {
+							if (tcNumber > 0 && tcNumber < MAX_TCASE) {
+								if (tcListSize < MAX_TCASE) {
+									tcList[tcListSize] = tcNumber;
+									tcListSize++;
+								} else {
+									msg("Maximum list size exceded: %d", MAX_TCASE);
+								}
+							} else {
+								fprintf(stderr, "Invalid test case number: %d", tcNumber);
+							}
+						}
+					}
+				}			
+				Lista = &Lista[k];
+			} while (*Lista != '\0');
+			argv[i] = argv[i+1] = "";
 		}
-		Lista = &Lista[k];
-	      } while (*Lista != '\0');
-		    
- 	   argv[i] = argv[i+1] = "";
-	   n -= 2;
 	}
-   }
-
-   if (Menosx > 0 && ! firstMutant)
-   	f = 0;
-	
-
-   Menosl = Menosd = Menosi = Menose = FALSE;
-   switch(argv[1][1])
-   {
-	case 'l':
-		Menosl = TRUE;
-		break;
-	case 'e':
-		Menose = TRUE;
-		break;
-
-	case 'i':
-		Menosi = TRUE;
-		break;
-
-	case 'd':
-		Menosd = TRUE;
-		break;
-   }
-
-   if (n != 0)
-   {
-	msg("Invalid or missing parameter");
-//	exit(1);
-   }
-
-/*------------------------------- Carrega arquivo de teste -------------*/
-
-   if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO)
-	exit(1);
-
-/*------------------ Atua sobre os casos de teste selecionados -----*/
 
 
 
-   if (Menosd)
-	for (i = f; i >= t; i--)
-	   DeleteTCase(i);
-   else
+	for (i = 2; i < argc-1; i++) {
+		if (strcmp(argv[i], "-l") == 0) {
+			showTestCases = TRUE;
+			argv[i] = "";
+		} else if (strcmp(argv[i], "-e") == 0) {
+			enableTestCases = TRUE;
+			argv[i] = "";
+		} else if (strcmp(argv[i], "-i") == 0) {
+			disableTestCases = TRUE;
+			argv[i] = "";
+		} else if (strcmp(argv[i], "-d") == 0) {
+			deleteTestCases = TRUE;
+			argv[i] = "";
+		}
+	}
 
-   for (i = t; i <= f; i++)
-   {
-	if (Menosl)
-	   ListaTCase(i, Menosp);
-	else
-	if (Menose)
-	    EnableTCase(i);
-	else
-	if (Menosi)
-	   DisableTCase(i);
-   }
+	if (enableTestCases && disableTestCases) {
+		fprintf(stderr, "Conflicting options regarding enabling/disabling test cases");
+		return ERRO;
+	}
 
-   if (Menosd)
-   {
-	OrdenaDecr(VetMenosx, Menosx);
-   }
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
+		return ERRO;
+	}
 
-   for (i = 0; i < Menosx; i++)
-   {
-	if (Menosl)
-	   ListaTCase(VetMenosx[i], Menosp);
-	else
-	if (Menose)
-	    EnableTCase(VetMenosx[i]);
-	else
-	if (Menosi)
-	   DisableTCase(VetMenosx[i]);
-	else
-	   DeleteTCase(VetMenosx[i]);
-   }
+	for (i = firstTestCase; i <= lastTestCase; i++) {
+		if (showTestCases) {
+			ListaTCase(i, 0);
+		} else if (enableTestCases) {
+			EnableTCase(i);
+		} else if (disableTestCases) {
+			DisableTCase(i);
+		}
+	}
 
+	if (useTCList) {
+		for (i = 0; i < tcListSize; i++) {
+			if (showTestCases) {
+				ListaTCase(tcList[i], 0);
+			} else if (enableTestCases) {
+				EnableTCase(tcList[i]);
+			} else if (disableTestCases) {
+				DisableTCase(tcList[i]);
+			}
+		}
+	}
 
+	// Defer deletion of test cases
+	//TODO: check if its better to erase from the last to the first (the original code was like this)
+	for (i = firstTestCase; i <= lastTestCase; i++) {
+		if (deleteTestCases) {
+   			DeleteTCase(i);
+		}
+	}
 
-fim:
-   descarrega_arquivo_tcase(&testSet);
-   
+	if (useTCList) {
+		for (i = 0; i < tcListSize; i++) {
+			if (deleteTestCases) {
+   				DeleteTCase(tcList[i]);
+			}
+		}
+	}
+
+	descarrega_arquivo_tcase(&testSet);
+	return OK;
 }
 
 
-/*--------------------------- Lista Caso de teste -------------------------*/
-ListaTCase(i, phis )
-int	i, phis;
+/**
+ * Shot data of a test case.
+ *
+ * @param i Number of test case
+ * @param phis Physical record number of this test case. If you do not know
+ * it, set it to zero (so that Proteum look for this data by itself).
+ */
+int
+ListaTCase(int i, int phis)
 {
-int	n, j, k, t;
-struct vetfunc	*p;
-char c;
+	int	n, j, k, t;
+	struct vetfunc	*p;
+	char c;
 
    k = i;
    if (! phis) 
@@ -469,16 +440,16 @@ ImportProteum(int argc, char *argv[])
 {
 	int i, k, cont = 0;
 	int recordNumber;
-	FILE *fp_ascii;
+	FILE *testCaseFile;
 	char *c;
 	HAND_TCASE importedTestSet;
 	char XLabel[NOME_LENGTH+1];
 
-	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
 		return ERRO;
 	}
 
-	if (carrega_arquivo_tcase(&importedTestSet, DirImport, ArqImport) == ERRO) {
+	if (carrega_arquivo_tcase(&importedTestSet, testCaseImportDir, testCaseInputDataImportFilename) == ERRO) {
 		descarrega_arquivo_tcase(&testSet);
 		return ERRO;
 	}
@@ -496,19 +467,19 @@ ImportProteum(int argc, char *argv[])
 			continue;
 		}
 
-		fp_ascii = criarq(DirCorrente, ArqTeste, SUFIXO_INPUT);
-		if (fp_ascii == NULL) {
+		testCaseFile = criarq(workingDir, testSessionName, SUFIXO_INPUT);
+		if (testCaseFile == NULL) {
 			fprintf(stderr, "Error creating temporary test case for imported test case %d", i);
 			continue;
 		}
 		
-		if (copy_file(TFILEIO(&importedTestSet), TREG(&testSet).apont_ent, TREG(&testSet).tamanho_ent, fp_ascii) == ERRO) {
+		if (copy_file(TFILEIO(&importedTestSet), TREG(&testSet).apont_ent, TREG(&testSet).tamanho_ent, testCaseFile) == ERRO) {
 			fprintf(stderr, "Error copying imported test case %i to temporary test case", i);
 			continue;
 		}
-		fecharq(fp_ascii);
+		fecharq(testCaseFile);
 
-		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, TREG(&importedTestSet).param, DirCorrente, ArqTeste, &(TREG(&testSet)), 120,  enableTrace, NULL, TREG(&testSet).interativo) == ERRO) {
+		if (exec_from_ascii(executableDir, executableFilename, instrumentedExecutableFilename, TREG(&importedTestSet).param, workingDir, testSessionName, &(TREG(&testSet)), 120,  enableTrace, NULL, TREG(&testSet).interativo) == ERRO) {
 			continue;
 		}
 		TREG(&testSet).interativo = TREG(&importedTestSet).interativo;
@@ -547,241 +518,202 @@ ImportProteum(int argc, char *argv[])
 
 	descarrega_arquivo_tcase(&importedTestSet);
 	descarrega_arquivo_tcase(&testSet);
+
+	return OK;
 }
 
-
-
-ImportPoke()
+/**
+ * Import test cases from POKE-TOOL.
+ */
+ImportPoke(int argc, char *argv[])
 {
-	FILE	*fp_ascii, *fp_par;
+	FILE	*testCaseFile, *parametersFile;
 	int	i, j, k, cont, TemPar;
 	char 	*c;
 	char XLabel[NOME_LENGTH+1];
+	char parameters[PARAMSIZE] = "";
 
-
-
-   if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO)
-	exit(1);
-
-   for (i = firstMutant, cont = 0; i <= lastMutant; i++)
-   {
-
-	sprintf(ArqImport, "input%d.tes", i);
-	TemPar = FALSE;
-	if (tem_arq(DirImport, ArqImport, ""))
-	{
-		fp_par = abrearq(DirImport, ArqImport, "", 0);
-		if (fp_par == NULL)
-			break;
-	 	posifim(fp_par);
-		k = ftell(fp_par);
-		if (k >= sizeof(Parametros))
-		{
-		   msg("Invalid POKE-TOOL parameter file");
-		   fecharq(fp_par);
-		   continue;
-		}
-		posiciona(fp_par, 0);
-		fgets(Parametros, (int) k, fp_par);
-	        k = strlen(Parametros);
-	        if (k > 0 && Parametros[k-1] == '\n')
-		   Parametros[k-1] = '\0';
-		fecharq(fp_par);
-		TemPar = TRUE;
-	}
-	else
-		strcpy(Parametros, "");
-
-	sprintf(ArqImport, "tec%d.tes", i);
-	if (tem_arq(DirImport, ArqImport, ""))
-	{
-		fp_par = abrearq(DirImport, ArqImport, "", 0);
-		if (fp_par == NULL)
-			break;
-	}
-	else
-	{
-		fp_par = NULL;
-		if (! TemPar)
-		   break;
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
+		return ERRO;
 	}
 
-        fp_ascii = criarq(DirCorrente, ArqTeste, SUFIXO_INPUT);
-        if (fp_ascii == NULL)
-	{
-	   l1:
-	   if (fp_par)
-		fecharq(fp_par);
-           break;
-	}
-
-        if (fp_par != NULL)
-        {
-           posifim(fp_par);
-           if (copy_file(fp_par, 0l, (int) ftell(fp_par), fp_ascii) == ERRO)
-           {
-                fecharq(fp_ascii);
-                goto l1;
-           }
-	   fecharq(fp_par);
-        }
-        fecharq(fp_ascii);
-
-       if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros,
-                        DirCorrente, ArqTeste, &(TREG(&testSet)), 
-			120,  enableTrace, SHELL, Menosinter) == ERRO )
-		   break;
-	TREG(&testSet).interativo = Menosinter;
-
-	inic_to_buf(TREG(&testSet).param, sizeof(TREG(&testSet).param));
-	inic_from_buf(Parametros);
-   	for (c = from_buf(); c != NULL; c = from_buf())
-	{
-    	  if (to_buf(c) == ERRO)
-	    break;
-   	}
-
-        if (! isempty(Label)) {
-		sprintf(XLabel, "%s%d", Label, i);
-	} else {
-		ArqImport[0] = '\0';
-	}
-
-	if (strlen(XLabel) <= LABELSIZE)
-           strcpy(TREG(&testSet).label, XLabel);
-	else
-	{
-	   msg("Invalid label");
-	   TREG(&testSet).label[0] = '\0';
- 	}
-
-
-       if (insere_tcase(&testSet,  enableTrace) == ERRO)
-                break;
-
-	cont++;
-	if (verbosityChar != '\0' && ! isspace(verbosityChar)) {
-           printf("%c", verbosityChar);
-           fflush(stdout);
-        }
-
-    }
-
-   printf("\n%d test cases imported from POKE-TOOL files\n", cont);
-
-fim:
-   descarrega_arquivo_tcase(&testSet);
-}
-
-
-
-ImportAscii()
-{
-FILE	*fp_ascii, *fp2;
-int	i, j, k, cont;
-static char	buf1[NOME_LENGTH+10], buf[NOME_LENGTH+10];
-long	t;
-char *c;
-
-	char XLabel[NOME_LENGTH+1];
-
-	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
-		msg("Could not load test set");
-		exit(1);
-	}
-
-	for (i = firstMutant, cont = 0; i <= lastMutant; i++) {
-		buf[0] = buf1[0] = '\0';
-		if (strlen(ArqImport) > 0) {
-			sprintf(buf, "%s%d", ArqImport, i);
-			printf("\nReading input data from file %s", buf);
-		}
-		if (strlen(ArqParam) > 0) {
-			sprintf(buf1, "%s%d", ArqParam, i);
-			printf("\nReading command line parameters from file %s", buf1);
+	for (i = firstTestCase, cont = 0; i <= lastTestCase; i++) {
+		// Try to import command line parameters for test case number i
+		printf(testCaseInputDataImportFilename, "input%d.tes", i);
+		strcpy(parameters, "");
+		TemPar = FALSE;
+		if (tem_arq(testCaseImportDir, testCaseInputDataImportFilename, "")) {
+			parametersFile = abrearq(testCaseImportDir, testCaseInputDataImportFilename, "", 0);
+			if (parametersFile != NULL) {
+				posifim(parametersFile);
+				k = ftell(parametersFile);
+				if (k >= sizeof(parameters)) {
+					msg("Invalid POKE-TOOL parameter file");
+					fecharq(parametersFile);
+				} else {
+					posiciona(parametersFile, 0);
+					fgets(parameters, (int) k, parametersFile);
+				        k = strlen(parameters);
+				        if (k > 0 && parameters[k-1] == '\n') {
+						parameters[k-1] = '\0';
+					}
+					fecharq(parametersFile);
+					TemPar = TRUE;
+				}
+			}
 		}
 
-		if (! tem_arq(DirImport, buf, "") && ! tem_arq(DirImport, buf1, "")) {
-			printf("\nCould not find the required files, skipping...");
-			continue;
-		}
-		if (tem_arq(DirImport, buf1, "")) {
-		 	fp_ascii = abrearq(DirImport, buf1, "", 0);
-			if (fp_ascii == NULL) {
-				printf("\nError reading command line parameters");
+		// Try to import test case number i
+		sprintf(testCaseInputDataImportFilename, "tec%d.tes", i);
+		if (tem_arq(testCaseImportDir, testCaseInputDataImportFilename, "")) {
+			testCaseFile = abrearq(testCaseImportDir, testCaseInputDataImportFilename, "", 0);
+			if (testCaseFile == NULL) {
+				msg("Invalid POKE-TOOL test case");
 				break;
 			}
-			posifim(fp_ascii);
-			t = ftell(fp_ascii);
-			posiciona(fp_ascii, 0);
-			if (t > sizeof(Parametros)) {
-				msg("Parameter too big");
-			   	fclose(fp_ascii);
-				continue;
-			}
-			fgets(Parametros, (int) t, fp_ascii);
-			fclose(fp_ascii);
-			k = strlen(Parametros);
-			if (k > 0 && Parametros[k-1] == '\n') {
-				Parametros[k-1] = '\0';
-			}
-		} else {
-			strcpy(Parametros, "");
+			fecharq(testCaseFile);
 		}
 
-
-		if ( tem_arq(DirImport, buf, "")) {
-			fp_ascii = abrearq(DirImport, buf, "", 0);
-		} else {
-			fp_ascii = tmpfile();
-		}
-		fp2 = criarq(DirCorrente, ArqTeste, SUFIXO_INPUT);
-		if (fp_ascii == NULL || fp2 == NULL) {
-			printf("\nError reading input data");
+		if (exec_from_ascii(executableDir, executableFilename, instrumentedExecutableFilename, parameters, workingDir, testSessionName, &(TREG(&testSet)), 120,  enableTrace, SHELL, isInteractive) == ERRO) {
 			break;
 		}
-		posifim(fp_ascii);
-	        if (copy_file(fp_ascii, 0l, (int) ftell(fp_ascii), fp2) == ERRO)
-	       	        break;
-        	fecharq(fp_ascii);
-		fecharq(fp2);
-		if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), 120,  enableTrace, SHELL, Menosinter) == ERRO) {
-			printf("\nCould not run executable against input data and command line parameters");
-			break;
-		}
-		TREG(&testSet).interativo = Menosinter;
+		TREG(&testSet).interativo = isInteractive;
 		inic_to_buf(TREG(&testSet).param, sizeof(TREG(&testSet).param));
-		inic_from_buf(Parametros);
-   		for (c = from_buf(); c != NULL; c = from_buf())	{
-			if (to_buf(c) == ERRO)
+		inic_from_buf(parameters);
+	   	for (c = from_buf(); c != NULL; c = from_buf()) {
+			if (to_buf(c) == ERRO) {
 				break;
-	   	}
-        	if (! isempty(Label)) {
+			}
+		}
+		if (! isempty(Label)) {
 			sprintf(XLabel, "%s%d", Label, i);
 		} else {
-        		XLabel[0] = '\0';
+			testCaseInputDataImportFilename[0] = '\0';
 		}
 
-	        if (strlen(XLabel) <= LABELSIZE) {
-        		strcpy(TREG(&testSet).label, XLabel);
+		if (strlen(XLabel) <= LABELSIZE) {
+			strcpy(TREG(&testSet).label, XLabel);
 		} else {
-     			msg("Invalid label");
+			msg("Invalid label");
 			TREG(&testSet).label[0] = '\0';
 		}
 
-
 		if (insere_tcase(&testSet,  enableTrace) == ERRO) {
-			cont--;
+                	break;
 		}
+
 		cont++;
-        	if (verbosityChar != '\0' && ! isspace(verbosityChar)) {       
-			printf("%c", verbosityChar);
-	       		fflush(stdout);
-        	}
+		if (verbosityChar != '\0' && ! isspace(verbosityChar)) {
+			fprintf(stdout, "%c", verbosityChar);
+			fflush(stdout);
+		}
 	}
-	printf("\n%d test cases imported from ASCII files\n", cont);
-fim:
+
+	printf("\n%d test cases imported from POKE-TOOL files\n", cont);
+
 	descarrega_arquivo_tcase(&testSet);
+	return OK;
+}
+
+/**
+ * Import test cases from plain text files.
+ */
+int
+ImportAscii(int argc, char *argv[])
+{
+	FILE *testCaseFile, *parametersFile;
+	int i, j, k, cont;
+	char testCaseFilename[NOME_LENGTH+10];
+	char parametersFilename[NOME_LENGTH+10];
+	long t;
+	char *c;
+	char parameters[PARAMSIZE] = "";
+	char XLabel[NOME_LENGTH+1];
+
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
+		msg("Could not load test set");
+		return ERRO;
+	}
+
+	if (strlen(testCaseInputDataImportFilename) > 0 || strlen(testCaseParametersImportFilename)) {
+		msg("Invalid import filename");
+	}
+
+	for (i = firstTestCase, cont = 0; i <= lastTestCase; i++) {
+		sprintf(parametersFilename, "%s%d", testCaseInputDataImportFilename, i);
+		fprintf(stdout, "\nReading command line parameters from file %s", parametersFilename);
+		strcpy(parameters, "");
+		if (tem_arq(testCaseImportDir, parametersFilename, "")) {
+		 	parametersFile = abrearq(testCaseImportDir, parametersFilename, "", 0);
+			if (parametersFile == NULL) {
+				fprintf(stdout, "\nError reading command line parameters");
+			} else {
+				posifim(parametersFile);
+				t = ftell(parametersFile);
+				posiciona(parametersFile, 0);
+				if (t > sizeof(parameters)) {
+					msg("Parameter too big");
+				   	fclose(parametersFile);
+				} else {
+					fgets(parameters, (int) t, parametersFile);
+					fclose(parametersFile);
+					k = strlen(parameters);
+					if (k > 0 && parameters[k-1] == '\n') {
+						parameters[k-1] = '\0';
+					}
+				}
+			}
+		}
+
+		sprintf(testCaseFilename, "%s%d", testCaseParametersImportFilename, i);
+		printf("\nReading input data from file %s", testCaseFilename);
+		if ( tem_arq(testCaseImportDir, testCaseFilename, "")) {
+			testCaseFile = abrearq(testCaseImportDir, testCaseFilename, "", 0);
+			if (testCaseFile == NULL) {
+				fprintf(stdout, "\nError reading input data");
+			}
+			fecharq(testCaseFile);
+			if (exec_from_ascii(executableDir, executableFilename, instrumentedExecutableFilename, parameters, workingDir, testSessionName, &(TREG(&testSet)), 120,  enableTrace, SHELL, isInteractive) == ERRO) {
+				fprintf(stdout, "\nCould not run executable against input data and command line parameters");
+			} else {
+				TREG(&testSet).interativo = isInteractive;
+				inic_to_buf(TREG(&testSet).param, sizeof(TREG(&testSet).param));
+				inic_from_buf(parameters);
+		   		for (c = from_buf(); c != NULL; c = from_buf())	{
+					if (to_buf(c) == ERRO) {
+						break;
+					}
+				}
+		        	if (! isempty(Label)) {
+					sprintf(XLabel, "%s%d", Label, i);
+				} else {
+        				XLabel[0] = '\0';
+				}
+
+			        if (strlen(XLabel) <= LABELSIZE) {
+        				strcpy(TREG(&testSet).label, XLabel);
+				} else {
+     					msg("Invalid label");
+					TREG(&testSet).label[0] = '\0';
+				}
+
+				if (insere_tcase(&testSet,  enableTrace) == ERRO) {
+					fprintf(stderr, "\nCould not import the test case %d", i);
+				} else {
+					cont++;
+			        	if (verbosityChar != '\0' && ! isspace(verbosityChar)) {       
+						fprintf(stdout, "%c", verbosityChar);
+				       		fflush(stdout);
+					}
+				}
+			}
+		}
+	}
+
+	fprintf(stdout, "\n%d test cases imported from ASCII files\n", cont);
+	descarrega_arquivo_tcase(&testSet);
+
+	return OK;
 }
 
 
@@ -792,7 +724,7 @@ fim:
 int
 ZapTcase(int argc, char *argv[])
 {
-	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
 		return ERRO;
 	}
 
@@ -812,8 +744,9 @@ AddTcase(int argc, char * argv[])
 {
 	int i, n, timeout = 20;
 	char *c;
+	char parameters[PARAMSIZE] = "";
 
-	Parametros[0] = '\0';
+	parameters[0] = '\0';
 	for (i = 0; i < (argc - 2); i++) {
 		if (strcmp(argv[i], "-timeout") == 0) {
 			timeout = atoi(argv[i+1]);
@@ -821,28 +754,28 @@ AddTcase(int argc, char * argv[])
 		}
 	}
 
-	if (carrega_arquivo_tcase(&testSet, DirCorrente, ArqTeste) == ERRO) {
+	if (carrega_arquivo_tcase(&testSet, workingDir, testSessionName) == ERRO) {
 	        return ERRO;
 	}
 
-	if (Menosinter) {
-		if (tcase_ex_inter(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros, SHELL) == ERRO) {
+	if (isInteractive) {
+		if (tcase_ex_inter(workingDir, testSessionName, executableDir, executableFilename, parameters, SHELL) == ERRO) {
 			return ERRO;;
 		}
 	} else {
-		if (tcase_ex_bat(DirCorrente, ArqTeste, DirExec, ArqExec, Parametros) == ERRO) {
+		if (tcase_ex_bat(workingDir, testSessionName, executableDir, executableFilename, parameters) == ERRO) {
 			return ERRO;
 		}
 	}
 
- 	if (exec_from_ascii(DirExec, ArqExec, ArqInstrum, Parametros, DirCorrente, ArqTeste, &(TREG(&testSet)), timeout,  enableTrace, SHELL, Menosinter) == ERRO ) {
+ 	if (exec_from_ascii(executableDir, executableFilename, instrumentedExecutableFilename, parameters, workingDir, testSessionName, &(TREG(&testSet)), timeout,  enableTrace, SHELL, isInteractive) == ERRO ) {
 		return ERRO;
 	}
-	TREG(&testSet).interativo = Menosinter;
+	TREG(&testSet).interativo = isInteractive;
 
 
 	inic_to_buf(TREG(&testSet).param, sizeof(TREG(&testSet).param));
-	inic_from_buf(Parametros);
+	inic_from_buf(parameters);
 	for (c = from_buf(); c != NULL; c = from_buf()) {
 		if (to_buf(c) == ERRO) {
 			break;
@@ -886,67 +819,60 @@ main(int argc, char *argv[])
         	    	}
 			argv[i] = "";
 			argv[i+1] = "";
-			fprintf(stdout, "\nSet test session directory for %s", DirCorrente);
+			fprintf(stdout, "\nSet test session directory for %s", workingDir);
 		} else if (strcmp(argv[i], "-DD") == 0) {
 			if (! tem_dir(argv[i+1])) {
 				msg("Invalid directory on parameter -DD");
 				return ERRO;
        			}
-			strcpy(DirImport, argv[i+1]);
+			strcpy(testCaseImportDir, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet directory for importing test cases to %s", DirImport);
+			printf("\nSet directory for importing test cases to %s", testCaseImportDir);
 		} else if (strcmp(argv[i], "-DE") == 0) {
 			if (! tem_dir(argv[i+1])) {
 				msg("Invalid directory on parameter -DE");
 				return ERRO;
        			}
-			strcpy(DirExec, argv[i+1]); // FIXME: DirExec?
+			strcpy(executableDir, argv[i+1]); // FIXME: DirExec?
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet directory for executable file to %s", DirExec);
+			printf("\nSet directory for executable file to %s", executableDir);
 		} else if (strcmp(argv[i], "-I") == 0) {
-			strcpy(ArqImport, argv[i+1]);
+			strcpy(testCaseInputDataImportFilename, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet file prefix for test cases to %s", ArqImport);
+			printf("\nSet file prefix for test cases to %s", testCaseInputDataImportFilename);
 		} else if (strcmp(argv[i], "-p") == 0) {
-        	        strcpy(ArqParam, argv[i+1]);
+        	        strcpy(testCaseParametersImportFilename, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet file prefix for test cases to %s", ArqImport);
+			printf("\nSet file prefix for test cases to %s", testCaseInputDataImportFilename);
 		} else if (strcmp(argv[i], "-E") == 0) {
-			strcpy(ArqExec, argv[i+1]);
+			strcpy(executableFilename, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet executable file to %s", ArqExec);
+			printf("\nSet executable file to %s", executableFilename);
 		} else if (strcmp(argv[i], "-EE") == 0) {
-			strcpy(ArqInstrum, argv[i+1]);
+			strcpy(instrumentedExecutableFilename, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet executable for trace file to %s", ArqInstrum);
+			printf("\nSet executable for trace file to %s", instrumentedExecutableFilename);
 		} else if (strcmp(argv[i], "-label") == 0 ) {
         	        strcpy(Label, argv[i+1]);
 			argv[i] = "";
 			argv[i+1] = "";
 			printf("\nSet label (?) to %s", Label);
-	        } else if (strcmp(argv[i], "-p") == 0) {
-			strcpy(Parametros, argv[i+1]);
-			argv[i] = "";
-			argv[i+1] = "";
-			printf("\nSet command line parameters to %s", Parametros);
 		} else if (strcmp(argv[i], "-f") == 0) {
-			firstMutant = MAXI(atoi(argv[i+1]), 0);
-			firstTestCase = firstMutant;
+			firstTestCase = MAXI(atoi(argv[i+1]), 0);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet initial test case and mutant to %d", firstMutant);
+			printf("\nSet initial test case to %d", firstTestCase);
 		} else if (strcmp(argv[i], "-t") == 0) {
-			lastMutant = MINI(atoi(argv[i+1]), MAX_TCASE);
-			lastTestCase = lastMutant;
+			lastTestCase = MINI(atoi(argv[i+1]), MAX_TCASE);
 			argv[i] = "";
 			argv[i+1] = "";
-			printf("\nSet final test case and mutant to %d", lastMutant);
+			printf("\nSet final test case to %d", lastTestCase);
 		} else if (strcmp(argv[i], "-v") == 0) {
 	                verbosityChar = *argv[i+1];
 			argv[i] = "";
@@ -956,24 +882,16 @@ main(int argc, char *argv[])
 	}
 
 	for (i = 2; i < argc-1; i++) {
-		if (strcmp(argv[i], "-P") == 0) {
-			if (Parametros == NULL) {
-				msg("Invalid options -p and -P");
-				exit(1);
-			}
-			printf("\nParameters: ");
-			gets(Parametros);
-			argv[i] = "";
-		} else if (strcmp(argv[i], "-trace") == 0) {
+		if (strcmp(argv[i], "-trace") == 0) {
 			enableTrace = TRUE;
 			argv[i] = "";
 			printf("\nEnable tracing.");
 		} else if (strcmp(argv[i], "-ninter") == 0) {
-			Menosinter = FALSE;
+			isInteractive = FALSE;
 			argv[i] = "";
 			printf("\nDisable ninter (?)");
 		} else if (strcmp(argv[i], "-inter") == 0) {
-			Menosinter = TRUE;
+			isInteractive = TRUE;
 			argv[i] = "";
 			printf("\nEnable ninter (?)");
 		}
@@ -989,42 +907,42 @@ main(int argc, char *argv[])
 
 	// Could not find a parameter configuring the working directory, so the use
 	// the default one (current directory).
-	if (isempty(DirCorrente)) {
+	if (isempty(workingDir)) {
 		setupWorkDir(".");	
 	}
 
-	if (isempty(DirExec)) {
-		strcpy(DirExec, DirCorrente);
-		fprintf(stdout, "\nSet directory for executable file to %s", DirExec);
+	if (isempty(executableDir)) {
+		strcpy(executableDir, workingDir);
+		fprintf(stdout, "\nSet directory for executable file to %s", executableDir);
 	}
 
-	if (isempty(DirImport)) {
-		strcpy(DirImport, DirCorrente);
-		fprintf(stdout, "\nSet directory for importing test cases to %s", DirImport);
+	if (isempty(testCaseImportDir)) {
+		strcpy(testCaseImportDir, workingDir);
+		fprintf(stdout, "\nSet directory for importing test cases to %s", testCaseImportDir);
 	}
 
-	if (isempty(ArqImport)) {
-		strcpy(ArqImport, ArqTeste);
-		fprintf(stdout, "\nSet file prefix for test cases to %s", ArqImport);
+	if (isempty(testCaseInputDataImportFilename)) {
+		strcpy(testCaseInputDataImportFilename, testSessionName);
+		fprintf(stdout, "\nSet file prefix for test cases to %s", testCaseInputDataImportFilename);
 	}
 
-	if (isempty(ArqExec)) {
-		strcpy(ArqExec, ArqTeste);
-		fprintf(stdout, "\nSet executable file to %s", ArqExec);
+	if (isempty(executableFilename)) {
+		strcpy(executableFilename, testSessionName);
+		fprintf(stdout, "\nSet executable file to %s", executableFilename);
 	}
 
-	if (isempty(ArqInstrum)) {
-		strcpy(ArqInstrum, ArqTeste);
-		fprintf(stdout, "\nSet executable for trace file to %s", ArqInstrum);
+	if (isempty(instrumentedExecutableFilename)) {
+		strcpy(instrumentedExecutableFilename, testSessionName);
+		fprintf(stdout, "\nSet executable for trace file to %s", instrumentedExecutableFilename);
 	}
 
-	if (lastMutant == 0) {
-		lastMutant = firstMutant + MAX_TCASE;
+	if (lastTestCase == 0) {
+		lastTestCase = firstTestCase + MAX_TCASE;
 	} else {
-		lastMutant = MINI(lastMutant, firstMutant+MAX_TCASE);
+		lastTestCase = MINI(lastTestCase, firstTestCase + MAX_TCASE);
 	}
-	fprintf(stdout, "\nSet initial test case to %d", lastMutant);
-	fprintf(stdout, "\nSet final test case to %d", firstMutant);
+	fprintf(stdout, "\nSet initial test case to %d", firstTestCase);
+	fprintf(stdout, "\nSet final test case to %d", lastTestCase);
 
 
 
