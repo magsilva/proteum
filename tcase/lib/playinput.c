@@ -398,110 +398,98 @@ pid_t	pid;
 
 
 
-int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), 
-	  int (*tr_err)(), long vtimer, long rtimer,
-	   char *prog, char *argv[])
+int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr_err)(), long vtimer, long rtimer, char *prog, char *argv[])
 {
-int	i, pid, c, bytes, ret1, k, j;
-struct  itimerval	t1;
-long	tt2, tt1;
-struct	rlimit	rlp;
-int	fim_le;
-struct timeval	sele_time;
-fd_set	fdset;
-int	pipe_out[2], pipe_err[2], pipe_in[2];
-struct  tms xtms;
+	int	i, pid, c, bytes, ret1, k, j;
+	struct  itimerval	t1;
+	long	tt2, tt1;
+	struct	rlimit	rlp;
+	int	fim_le;
+	struct timeval	sele_time;
+	fd_set	fdset;
+	int	pipe_out[2], pipe_err[2], pipe_in[2];
+	struct  tms xtms;
 
-
-   pid = pipe_fork(pipe_in, pipe_out, pipe_err);
-
-   if (pid < 0)
-      return ERRO;
-   if ( pid == 0 ) /* child */
-   {
- 	rlp.rlim_cur = rlp.rlim_max = 0;	    
-	setrlimit(RLIMIT_CORE, &rlp); /* tamanho maximo para arquivo
-						CORE = 0 bytes */
-/*	if (vtimer != 0)
-	{
-           tick2timeval(vtimer, &t1.it_value); 
-	   t1.it_interval.tv_sec = t1.it_value.tv_sec ;
-	   t1.it_interval.tv_usec = t1.it_value.tv_usec;
-	   signal(SIGVTALRM, SIG_DFL);  
-	   setitimer(ITIMER_VIRTUAL, &t1, NULL); 
+	pid = pipe_fork(pipe_in, pipe_out, pipe_err);
+	if (pid < 0) {
+		return ERRO;
 	}
-	if (rtimer != 0)
-	{
-           tick2timeval(rtimer, &t1.it_value); 
-	   t1.it_interval.tv_sec = t1.it_value.tv_sec ;
-	   t1.it_interval.tv_usec = t1.it_value.tv_usec;
-	   signal(SIGALRM, SIG_DFL);  
-	   setitimer(ITIMER_REAL, &t1, NULL); 
-	 } */
-	 execv(prog,argv ); 
-	 return ERRO;
-    }
-    else
-    {
-	 tt1 = times(&xtms);
-	 fim_le = FALSE;
-	 c = 0;
-	 while ( waitpid(pid, &c, WNOHANG) != pid )
-	 {
-	    bytes = 0;
 
-            if (ioctl(pipe_out[0],FIONREAD,&bytes) != -1 && bytes > 0)
-                  bytes = read(pipe_out[0],buff,BUFFSIZE);
-            else  bytes = 0;
-
-            if (tr_out != NULL && (k = tr_out(buff, bytes,pid)) != bytes)
-	    {
-		if (k != ERRO) k = OK;
-                goto fim;
-	    }
-
-            bytes = 0;
-            if (ioctl(pipe_err[0],FIONREAD,&bytes) != -1 && bytes > 0)
-                  bytes = read(pipe_err[0],buff,BUFFSIZE);
-            else  bytes = 0;
-
-            if (tr_err != NULL && (k = tr_err(buff, bytes, pid)) != bytes)
-	    {
-                 if (k != ERRO ) k = OK;
-		 goto fim;
-	    }
-
-
-            if ( ! fim_le)
-            {
-                   bytes = tr_in(buff, BUFFSIZE);
-
-                   if (bytes < 0)
-		   {
-			k = ERRO;
-			goto fim;
-		   }
-		   else
-		   if (bytes == 0)
-                   {
-                       fim_le = TRUE;
-                       close(pipe_in[1]);
-                    }
-                    else
-                    {
-                        int t;
-                           t = bytes;
-                           bytes = writepipe(pipe_in[1], buff, bytes);
-                           if (bytes < 0)
-                           {
-                                msg("Error writing to the pipe");
-				k = ERRO;
+	if ( pid == 0 ) { /* child */
+	 	rlp.rlim_cur = rlp.rlim_max = 0;	    
+		setrlimit(RLIMIT_CORE, &rlp); /* tamanho maximo para arquivo CORE = 0 bytes */
+	/*	if (vtimer != 0) {
+			tick2timeval(vtimer, &t1.it_value); 
+			t1.it_interval.tv_sec = t1.it_value.tv_sec ;
+			t1.it_interval.tv_usec = t1.it_value.tv_usec;
+			signal(SIGVTALRM, SIG_DFL);  
+			setitimer(ITIMER_VIRTUAL, &t1, NULL); 
+		}
+		if (rtimer != 0) {
+			tick2timeval(rtimer, &t1.it_value); 
+			t1.it_interval.tv_sec = t1.it_value.tv_sec ;
+			t1.it_interval.tv_usec = t1.it_value.tv_usec;
+			signal(SIGALRM, SIG_DFL);  
+			setitimer(ITIMER_REAL, &t1, NULL);
+		}
+	 */
+		execv(prog, argv); 
+		exit(ERRO);
+	} else { /* parent */
+		tt1 = times(&xtms);
+		fim_le = FALSE;
+		c = 0;
+		while ( waitpid(pid, &c, WNOHANG) != pid ) {
+			bytes = 0;
+			if (ioctl(pipe_out[0],FIONREAD,&bytes) != -1 && bytes > 0) {
+				bytes = read(pipe_out[0],buff,BUFFSIZE);
+			} else {
+				bytes = 0;
+			}
+			if (tr_out != NULL && (k = tr_out(buff, bytes,pid)) != bytes) {
+				if (k != ERRO) {
+					k = OK;
+				}
 				goto fim;
-			   }
-			   else
-			   if (bytes == 0)
-			   	continue;  /* / broken pipe! */ 
-                    }
+			}
+			bytes = 0;
+			if (ioctl(pipe_err[0],FIONREAD,&bytes) != -1 && bytes > 0) {
+				bytes = read(pipe_err[0],buff,BUFFSIZE);
+			} else {
+				bytes = 0;
+			}
+
+			if (tr_err != NULL && (k = tr_err(buff, bytes, pid)) != bytes) {
+				if (k != ERRO ) {
+					k = OK;
+				}
+				goto fim;
+			}
+
+
+			if ( ! fim_le) {
+				bytes = tr_in(buff, BUFFSIZE);
+				if (bytes < 0) {
+					k = ERRO;
+					goto fim;
+				} else {
+					if (bytes == 0) {
+						fim_le = TRUE;
+						close(pipe_in[1]);
+					} else {
+						int t;
+						t = bytes;
+						bytes = writepipe(pipe_in[1], buff, bytes);
+						if (bytes < 0) {
+							msg("Error writing to the pipe");
+							k = ERRO;
+							goto fim;
+						} else {
+							if (bytes == 0) {
+							   	continue;  /* / broken pipe! */ 
+							}		
+						}
+					}
 
               }
                    /* sometimes, itimer doesn't work then this is a
