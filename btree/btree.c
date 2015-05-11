@@ -100,7 +100,7 @@ BTREE_create(char *dfile, char *ifile, int keysize,  int (*cmp_key)(), void (* p
 		goto l2;
 	}
 
-	k = PAGESIZE - sizeof(PAGE_ADDRESS);
+	k = (unsigned int) (PAGESIZE - sizeof(PAGE_ADDRESS));
 	p->order = (k / p->keysize) / 2 * 2;
 #ifdef DEBUG
 	p->order = 4;
@@ -153,7 +153,7 @@ BTREE *
 BTREE_open(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* print_key)())
 {
 	BTREE   *p;
-	int     k;
+	unsigned int     k;
 	PAGE_ZERO *pz;
 
 	p = (BTREE *) malloc(sizeof(BTREE));
@@ -188,7 +188,7 @@ BTREE_open(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* prin
 		goto l3;
 	}
 
-	k = PAGESIZE - sizeof(PAGE_ADDRESS);
+	k = (unsigned int) (PAGESIZE - sizeof(PAGE_ADDRESS));
 	p->realkeysize = keysize;
 	p->keysize = (keysize / sizeof(void *) + 1) * sizeof(void *);
 	p->order = (k / p->keysize) / 2 * 2;

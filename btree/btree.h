@@ -26,7 +26,7 @@
 
 #define		BTREE_LABEL	0x41762345
 
-#define         PAGESIZE        1024
+#define         PAGESIZE        (unsigned int) 1024
 
 #define		DUMMY_CHAR	'd'
 
