@@ -477,11 +477,8 @@ list-good: $(UTIL)/list-good.c $(INCLUDEFILE)  $(OBJ)/libmuta.o $(OBJ)/libpteste
 info-muta: $(UTIL)/info-muta.c
 		$(CC) $(CLFLAGS) $(UTIL)/info-muta.c -o $(BIN)/info-muta
 
-misc: headtail extimout splitarg recinput testrand
+misc: headtail extimout recinput testrand
 	# building auxiliar programs
-
-splitarg: $(MISC)/splitarg.c $(INCLUDEFILE) $(OBJ)/libmuta.o
-	$(CC) $(CLFLAGS) $(MISC)/splitarg.c -o $(BIN)/splitarg
 
 headtail: $(MISC)/headtail.c $(INCLUDEFILE) $(OBJ)/libmuta.o
 	$(CC) $(CLFLAGS) $(MISC)/headtail.c $(OBJ)/libgerais.o -o $(BIN)/headtail
@@ -524,7 +521,6 @@ clean:
 	rm -f $(OS)/bin/li
 	rm -f $(OS)/bin/muta-gen   
 	rm -f $(OS)/bin/pteste     
-	rm -f $(OS)/bin/splitarg  
 	rm -f $(OS)/bin/test-new
 	rm -f $(OS)/bin/info-muta
 	rm -f $(OS)/bin/testrand
