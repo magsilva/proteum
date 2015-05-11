@@ -114,7 +114,6 @@ typedef	struct {
 /********************* AUXILIAR PROGRAMS ****************************/
 #define		PROG_RECINPUT	"recinput"
 #define		PROG_HEADTAIL	"headtail"
-#define         PROG_SEPARA     "splitarg"
 
 #define		SHELL		"/bin/sh"
 

@@ -305,19 +305,19 @@ int	i, t, j;
 char *
 monta_nome(char *fullname, char *dir, char *nome, char *ext)
 {
-	int t;
+	int dirname_size;
 
 	if (nome[0] == '\0') {
 		return NULL;
 	}
 	fullname[0] = '\0';
 	strcpy(fullname, normaliza(dir));
-	t = strlen(fullname);
-	if (t > 0 && fullname[t - 1] != '/') {
-		fullname[t] = '/';
-		t++;
+	dirname_size = strlen(fullname);
+	if (dirname_size == 0 || (dirname_size > 0 && fullname[dirname_size - 1] != '/')) {
+		strcat(fullname, "/");
+		dirname_size++;
 	}
-	strcpy(&fullname[t], normaliza(nome));
+	strcat(fullname, normaliza(nome));
 	strcat(fullname, ext);
 	return fullname;
 }
@@ -539,52 +539,95 @@ union {
 
 
 
-/************************************************************************
-SEPARA_PARAM:
-	Pega um string e sepera em diversos parametros
-************************************************************************/
-separa_param(p, arg, shel)
-char	*p, *arg[], *shel;
+/**
+ * Split a string into several parameters.
+ *
+ * @return Array of param. The last param is NULL.
+ */
+char *
+separa_param(char *param_string)
 {
-int     i,j;
-FILE *fppipe;
-char *q;
+	char *p, *start_of_word;
+	int c;
+	enum states { DULL, IN_WORD, IN_STRING_DQUOTE, IN_STRING_SQUOTE } state = DULL;
+	size_t argc = 0;
+	char **argv = NULL;
 
-   if (p == NULL)
-             {
-                arg[0] = NULL;
-                return 0;
-              }
-   q = p;
-   if (shel != NULL)
-   {
-     sprintf(bufaux, "$PROTEUMIMHOME/%s %s", PROG_SEPARA, p);
-     fppipe = popen(bufaux, "r");
-     if (fppipe == NULL)
-     {
-        return ERRO;
-     }
-     while (fgets(p, 512, fppipe) != NULL)
-     {
-        p += strlen(p);
-	*(p-1) = '\0';
-     }
-     *p = '\0';
-     pclose(fppipe);
-   }
-   p = q;
-   i = 0;
-   j = 0;
+	if (param_string == NULL) {
+		return NULL;
+	}
 
-   inic_from_buf(p);
-   for (q = from_buf(); q != NULL; q = from_buf())
-   {
-       arg[i++] = q;
-    }
-   arg[i] = NULL;
-   return i;
+	// http://stackoverflow.com/a/26913698
+	for (p = param_string; *p != '\0'; p++) {
+	        c = (unsigned char) *p;
+        	switch (state) {
+		        case DULL:
+		        	if (! isspace(c)) {
+					if (c == '"' && state) {
+						state = IN_STRING_DQUOTE;
+						start_of_word = p + 1;
+					} else if (c == '\'') {
+						state = IN_STRING_SQUOTE;
+						start_of_word = p + 1;
+					} else {
+						state = IN_WORD;
+						start_of_word = p;
+					}
+					continue;
+			case IN_STRING_DQUOTE:
+				if (c == '"') {
+					argv = realloc(argv, (argc + 1) * sizeof(char *));
+					argv[argc] = malloc(sizeof(start_of_word) * sizeof(char));
+					strcpy(argv[argc], start_of_word);
+					argc++;
+					state = DULL;
+				}
+				continue;
+			case IN_STRING_SQUOTE:
+				if (c == '\'') {
+					argv = realloc(argv, (argc + 1) * sizeof(char *));
+					argv[argc] = malloc(sizeof(start_of_word) * sizeof(char));
+					strcpy(argv[argc], start_of_word);
+					argc++;
+					state = DULL;
+				}
+				continue;
+			case IN_WORD:
+				if (isspace(c)) {
+					argv = realloc(argv, (argc + 1) * sizeof(char *));
+					argv[argc] = malloc(sizeof(start_of_word) * sizeof(char));
+					strcpy(argv[argc], start_of_word);
+					argc++;
+					state = DULL;
+				}
+				continue;
+			}
+		}
+	}
+
+	if (state != DULL) {
+		free_array_str(argv);
+		return NULL;
+	} else {
+		argv = realloc(argv, (argc + 1) * sizeof(char *));
+		argv[argc] = NULL;
+		return argv;
+	}
 }
 
+
+/**
+ * Free a null terminated array of strings.
+ */
+int
+free_array_str(char *array[])
+{
+	char *p;
+	for (p = array; *p != NULL; p++) {
+		free(p);
+	}
+	free(array);
+}	
 
 
 /***********************************************************************
