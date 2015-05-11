@@ -18,78 +18,62 @@
 */
 
 
-#include	<sys/times.h>
+#include <sys/times.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <limits.h>
+#include <lib/gerais.h>
+#include <tcase/lib/tcase.h>
+#include <dirent.h>
 
-#ifdef		SUNOS4
-#include	<sys/time.h>
-#endif
-
-#ifdef		LINUX
-#include	<sys/time.h>
-#endif
-
-#include	<sys/wait.h>
-#include 	<sys/types.h>
-#include 	<signal.h>
-#include	<limits.h>
-#include	<lib/gerais.h>
-#include	<tcase/lib/tcase.h>
-
-#include	<dirent.h>
-
-
-char	*argv[516];
-char    y[2*PARAMSIZE];
-
-/***************************************************************************
-	Executa um caso de teste e grava resultado num arquivo.
-Parametros:
-	dir: diretorio do teste
-	test: nome do teste
-	direx: diretorio do executavel
-	exec: nome do executavel
-	param: parametros
-****************************************************************************/
-
-
-
-tcase_ex_inter(dir, test, direx, exec, param, shel)
-char	*dir, *test, *direx, *exec, *param, *shel;
+/**
+ * Run test case and save data to file.
+ *
+ * @param dir Directory where data is to be saved to.
+ * @param test Name of test case
+ * @param direx Directory with executable
+ * @param exec Name of executable file
+ * @param param Parameters to be used with executable
+ * @param shell Toggle to control whether to use PROTEUMIMHOME environment variable
+ * to find Proteum's tools.
+ */
+int
+tcase_ex_inter(char *dir, char *test, char *direx, char *exec, char *param, char *shel)
 {
-int	t;
-char	*p;
-int	ret_cod;
+	int return_code;
+	char exec_fullname[PATH_MAX];
+	char test_fullname[PATH_MAX];
+	char **argv;
 
-    argv[0] = monta_nome(direx, exec, "");
-    separa_param(param, &argv[1], shel);
-    ret_cod = recinput(monta_nome(dir, test, SUFIXO_INPUT), argv);
-
-    if (ret_cod != 0)
-	return ERRO;
-
-    return OK;
+	monta_nome(exec_fullname, direx, exec, "");
+	argv = separa_param(param);
+	monta_nome(test_fullname, dir, test, SUFIXO_INPUT);
+	return_code = recinput(test_fullname, exec_fullname, argv);
+	free_array_str(argv);
+	if (return_code != 0) {
+		return ERRO;
+	}
+	return OK;
 }
 
 
-tcase_ex_bat(dir, test, direx, exec, param)
-char	*dir, *test, *direx, *exec, *param;
+tcase_ex_bat(char *dir, char *test, char *direx, char *exec, char *param)
 {
-int	t;
-char	*p;
-int	ret_cod;
+	int t;
+	int ret_cod;
+	char *p;
+	char y[_POSIX_ARG_MAX];
 
-    sprintf(y, "%s %s \"%s\" %s", PROG_RECINPUT,
-				  monta_nome(direx, exec, ""),
-				 param,
-				 monta_nome(dir, test, SUFIXO_INPUT ));
-
-    if (exec_extern(y, &ret_cod, 1) == ERRO)
-	return ERRO;
-
-    if (ret_cod != 0)
-	return ERRO;
-
-    return OK;
+	sprintf(y, "%s %s \"%s\" %s", PROG_RECINPUT, monta_nome(direx, exec, ""), param, monta_nome(dir, test, SUFIXO_INPUT));
+	if (exec_extern(y, &ret_cod, 1) == ERRO) {
+		return ERRO;
+	}
+	if (ret_cod != 0) {
+		return ERRO;
+	}
+	return OK;
 }
 
 
@@ -143,7 +127,10 @@ int     xret_cod, ret_cod, k;
 struct  tms xtms;
 struct	itimerval r1;
 char *p;
-
+	char exec_fullname[PATH_MAX];
+	char inst_exec_fullname[PATH_MAX];
+	char test_fullname[PATH_MAX];
+	char **argv;
 
     if (tty_save(STDIN_FILENO) == ERRO)
 	return ERRO;
@@ -167,26 +154,25 @@ char *p;
 	fecharq(fpout);
 	return ERRO;
     }
-    argv[0] = monta_nome(direx,exec,"");
+    monta_nome(exec_fullname, direx, exec, "");
 
-    if (use_instrum)
-        p = monta_nome(direx,instrum,"");
-    else
-	p = argv[0];
+	if (use_instrum) {
+        	monta_nome(inst_exec_fullname, direx, instrum, "");
+	} else {
+		strcpy(inst_exec_fullname, argv[0]);
+	}
 
-    separa_param(param, &argv[1], shel);
-    setbuf(fpin,NULL);
+	argv = separa_param(param);
+	setbuf(fpin, NULL);
 
-    if (interactive)
-    {
+    if (interactive) {
 /*	aloca_master(); */
-        k = playinput(&ret_cod, fileno(fpin), le_input, trata_out,
-		   trata_err, timeout*100, timeout*100, p, argv);
+        k = playinput(&ret_cod, fileno(fpin), le_input, trata_out, trata_err, timeout*100, timeout*100, p, argv);
 /*	libera_master(); */
-    }
-    else
-	k = playbatch(&ret_cod, fileno(fpin), le_input, trata_out,
-		   trata_err, timeout*100, timeout*100, p, argv);
+    } else {
+	k = playbatch(&ret_cod, fileno(fpin), le_input, trata_out, trata_err, timeout*100, p, argv);
+	}
+	free_array_str(argv);
 
     fecharq(fpin);
     fecharq(fpout);

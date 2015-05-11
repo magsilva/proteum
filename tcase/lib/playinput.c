@@ -180,10 +180,8 @@ playinput(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(),
 int	i, c, bytes, ret1, k, j;
 struct  itimerval	t1;
 long	tt2, tt1;
-struct	rlimit	rlp;
+struct	rlimit	resource_limit;
 int	fim_le;
-struct timeval	sele_time;
-fd_set	fdset;
 int	pipe_out[2], pipe_err[2], fdm;
 pid_t pid, pipe_fork();
 
@@ -195,8 +193,8 @@ pid_t pid, pipe_fork();
       return ERRO;
    if ( pid == 0 ) /* child */
    {
- 	rlp.rlim_cur = rlp.rlim_max = 0;	    
-	setrlimit(RLIMIT_CORE, &rlp); /* tamanho maximo para arquivo
+ 	resource_limit.rlim_cur = resource_limit.rlim_max = 0;	    
+	setrlimit(RLIMIT_CORE, &resource_limit); /* tamanho maximo para arquivo
 						CORE = 0 bytes */
  	if (vtimer != 0)
 	{
@@ -337,212 +335,215 @@ Here starts code for non interactive test case replay */
 pid_t
 pipe_fork(int pipe_in[], int pipe_out[], int pipe_err[])
 {
-pid_t	pid;
+	pid_t	pid;
 
-   pipe(pipe_out);
-   pipe(pipe_err);
-   pipe(pipe_in);
-
-     if ( (pid = fork()) < 0)
-   {   
-	msg("Can not fork");
-	close(pipe_out[1]);
-	close(pipe_out[0]);
-	close(pipe_err[1]);
-	close(pipe_err[0]);
-	close(pipe_in[1]);
-	close(pipe_in[0]);
-	return ERRO;
-    }
-
-    else 
-    if (pid == 0) 
-    {		/* child */
-	if (dup2(pipe_out[1], STDOUT_FILENO) != STDOUT_FILENO)
-	{
-	    msg("dup2 error to stdout");
-	    exit(1);
+	if (pipe(pipe_in) == -1) {
+		return ERRO;
 	}
-	if (dup2(pipe_err[1], STDERR_FILENO) != STDERR_FILENO)
-	{
-	    msg("dup2 error to stderr");
-	    exit(1);
-	}
-	if (dup2(pipe_in[0], STDIN_FILENO) != STDIN_FILENO)
-	{
-	    msg("dup2 error to stdin");
-	    exit(1);
-	}
-	if (pipe_out[1] > STDERR_FILENO)
-		close(pipe_out[1]);
-	 if (pipe_err[1] > STDERR_FILENO)
-		close(pipe_err[1]);
-	if (pipe_in[0] > STDERR_FILENO)
+	if (pipe(pipe_out) == -1) {
 		close(pipe_in[0]);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	close(pipe_in[1]);
-	return 0;		/* child returns 0 just like fork() */
+		close(pipe_in[1]);
+	}
+	if (pipe(pipe_err) == -1) {
+		close(pipe_in[0]);
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		close(pipe_out[1]);
+		return ERRO;
+	}
 
-   } 
-   else 
-   {					/* parent */
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	close(pipe_in[0]);
-	return(pid);	/* parent returns pid of child */
-   }
+	pid = fork();
+	if (pid < 0) {
+		msg("Can not fork");
+		close(pipe_in[0]);
+		close(pipe_in[1]);
+		close(pipe_in[0]);
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		close(pipe_out[1]);
+		return ERRO;
+	} else  if (pid == 0) { /* child */
+		if (dup2(pipe_out[1], STDOUT_FILENO) == -1) {
+			msg("dup2 error to stdout");
+			return ERRO;
+		}
+		if (dup2(pipe_err[1], STDERR_FILENO) == -1) {
+	    		msg("dup2 error to stderr");
+			return ERRO;
+		}
+		if (dup2(pipe_in[0], STDIN_FILENO) == -1) {
+			msg("dup2 error to stdin");
+			return ERRO;
+		}
+
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		close(pipe_err[0]);
+		return 0; /* child returns 0 just like fork() */
+	} else { /* parent */
+		close(pipe_in[0]);
+		close(pipe_out[1]);
+		close(pipe_err[1]);
+		return pid;	/* parent returns pid of child */
+	}
 }
 
-
-
-
-
-int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr_err)(), long vtimer, long rtimer, char *prog, char *argv[])
+/**
+ * @param tr_out Handler function for data read from stdin. Its parameters are: byte buffer, size of byte buffer, pid of child process.
+ */
+int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr_err)(), long vtimer, char *prog, char *argv[])
 {
-	int	i, pid, c, bytes, ret1, k, j;
-	struct  itimerval	t1;
-	long	tt2, tt1;
-	struct	rlimit	rlp;
-	int	fim_le;
-	struct timeval	sele_time;
-	fd_set	fdset;
-	int	pipe_out[2], pipe_err[2], pipe_in[2];
-	struct  tms xtms;
+	int pid;
+	int pipe_out[2], pipe_err[2], pipe_in[2];
 
 	pid = pipe_fork(pipe_in, pipe_out, pipe_err);
 	if (pid < 0) {
 		return ERRO;
 	}
 
-	if ( pid == 0 ) { /* child */
-	 	rlp.rlim_cur = rlp.rlim_max = 0;	    
-		setrlimit(RLIMIT_CORE, &rlp); /* tamanho maximo para arquivo CORE = 0 bytes */
-	/*	if (vtimer != 0) {
-			tick2timeval(vtimer, &t1.it_value); 
-			t1.it_interval.tv_sec = t1.it_value.tv_sec ;
-			t1.it_interval.tv_usec = t1.it_value.tv_usec;
-			signal(SIGVTALRM, SIG_DFL);  
-			setitimer(ITIMER_VIRTUAL, &t1, NULL); 
+	if (pid == 0) { /* child */
+		struct	rlimit	resource_limit;
+		struct  itimerval interval_time;
+
+		// Disable core dump
+	 	resource_limit.rlim_cur = 0;
+		resource_limit.rlim_max = 0; 
+		setrlimit(RLIMIT_CORE, &resource_limit);
+
+		// Set max time a process can run before signaling with SIGVTALRM
+		if (vtimer != 0) {
+			interval_time.it_interval.tv_sec = vtimer;
+			interval_time.it_interval.tv_usec = vtimer * 1000000L;
+			interval_time.it_value.tv_sec = vtimer;
+			interval_time.it_value.tv_usec = vtimer * 1000000L;
+			signal(SIGVTALRM, SIG_DFL);  // SIG_DFL is the default action for this signal, which is to terminate the process
+			setitimer(ITIMER_VIRTUAL, &interval_time, NULL); 
 		}
-		if (rtimer != 0) {
-			tick2timeval(rtimer, &t1.it_value); 
-			t1.it_interval.tv_sec = t1.it_value.tv_sec ;
-			t1.it_interval.tv_usec = t1.it_value.tv_usec;
-			signal(SIGALRM, SIG_DFL);  
-			setitimer(ITIMER_REAL, &t1, NULL);
-		}
-	 */
 		execv(prog, argv); 
 		exit(ERRO);
-	} else { /* parent */
-		tt1 = times(&xtms);
-		fim_le = FALSE;
-		c = 0;
-		while ( waitpid(pid, &c, WNOHANG) != pid ) {
-			bytes = 0;
-			if (ioctl(pipe_out[0],FIONREAD,&bytes) != -1 && bytes > 0) {
-				bytes = read(pipe_out[0],buff,BUFFSIZE);
-			} else {
-				bytes = 0;
-			}
-			if (tr_out != NULL && (k = tr_out(buff, bytes,pid)) != bytes) {
-				if (k != ERRO) {
-					k = OK;
+	} else {
+		/* parent */
+		int child_retcode, bytes, result;
+		int fim_le = FALSE;
+
+		while (waitpid(pid, &child_retcode, WNOHANG) != pid) {
+			// Read data from child's output pipe 
+			bytes = -1;
+			if (ioctl(pipe_out[0], FIONREAD, &bytes) != -1) {
+				if (bytes > 0) {
+					bytes = read(pipe_out[0], buff, BUFFSIZE);
 				}
+			}
+			if (bytes == -1) {
+				result = ERRO;
 				goto fim;
 			}
-			bytes = 0;
-			if (ioctl(pipe_err[0],FIONREAD,&bytes) != -1 && bytes > 0) {
-				bytes = read(pipe_err[0],buff,BUFFSIZE);
-			} else {
-				bytes = 0;
+			// Handle data
+			if (tr_out != NULL) {
+				result = tr_out(buff, bytes, pid);
+				if (result == ERRO || result != bytes) {
+					result = ERRO;
+					goto fim;
+				}
 			}
 
-			if (tr_err != NULL && (k = tr_err(buff, bytes, pid)) != bytes) {
-				if (k != ERRO ) {
-					k = OK;
+			// Read data from child's err pipe
+			bytes = -1;
+			if (ioctl(pipe_err[0], FIONREAD, &bytes) != -1) {
+				if (bytes > 0) {
+					bytes = read(pipe_err[0], buff, BUFFSIZE);
 				}
+			}
+			if (bytes == -1) {
+				result = ERRO;
 				goto fim;
 			}
-
-
+			// Handle data
+			if (tr_err != NULL) {
+				result = tr_err(buff, bytes, pid);
+				if (result == ERRO || result != bytes) {
+					result == ERRO;
+					goto fim;
+				}
+			}
+	
 			if ( ! fim_le) {
 				bytes = tr_in(buff, BUFFSIZE);
 				if (bytes < 0) {
-					k = ERRO;
-					goto fim;
+					result = ERRO;
+						goto fim;
+				} else if (bytes == 0) {
+					fim_le = TRUE;
+					close(pipe_in[1]);
 				} else {
-					if (bytes == 0) {
-						fim_le = TRUE;
-						close(pipe_in[1]);
+					bytes = writepipe(pipe_in[1], buff, bytes);
+					if (bytes < 0) {
+						msg("Error writing to the pipe");
+						result = ERRO;
+						goto fim;
 					} else {
-						int t;
-						t = bytes;
-						bytes = writepipe(pipe_in[1], buff, bytes);
-						if (bytes < 0) {
-							msg("Error writing to the pipe");
-							k = ERRO;
-							goto fim;
-						} else {
-							if (bytes == 0) {
-							   	continue;  /* / broken pipe! */ 
-							}		
-						}
+						if (bytes == 0) {
+						   	continue;  /* broken pipe! */ 
+						}		
 					}
+				}
+         	     	}
+		}
 
-              }
-                   /* sometimes, itimer doesn't work then this is a
-                        guarantee for aborting looping mutants */
-              tt2 = times(&xtms) - tt1;
-              if (rtimer != 0 && tt2 > rtimer)
-              {
-                  kill(pid, SIGKILL);
-		  k = 1; c = -1;
-		  goto fim;
-               }
-          }
-          do {
+		// Handle any remaining output data
+		do {
+			bytes = -1;
+			if (ioctl(pipe_out[0], FIONREAD, &bytes) != -1) {
+				if (bytes > 0) {
+					bytes = read(pipe_out[0], buff, BUFFSIZE);
+				}
+			}
+			if (bytes == -1) {
+				result = ERRO;
+				goto fim;
+			}
+			// Handle data
+			if (tr_out != NULL) {
+				result = tr_out(buff, bytes, pid);
+				if (result == ERRO || result != bytes) {
+					result = ERRO;
+					goto fim;
+				}
+			}
+		} while	(bytes > 0);
 
-                   if (ioctl(pipe_out[0],FIONREAD,&bytes) != -1 && bytes > 0)
-                           bytes = read(pipe_out[0],buff,BUFFSIZE);
-                     else  bytes = 0;
-
-                   if (tr_out != NULL && (k = tr_out(buff, bytes, pid)) != bytes)
-		   {
-                        if (k != ERRO) k = OK;
-			goto fim;
-		   }
-              } while (bytes > 0);
-
-          do {
-
-                   if (ioctl(pipe_err[0],FIONREAD,&bytes) != -1 && bytes > 0)
-                           bytes = read(pipe_err[0],buff,BUFFSIZE);
-                     else  bytes = 0;
-
-
-                   if (tr_err != NULL && (k = tr_err(buff, bytes, pid)) != bytes)
-		   {
-                        if (k != ERRO) k = OK;
-			goto fim;
-		   }
-               } while (bytes > 0);
-
-    }
-   k = OK;
-
+		// Handle any remaining err data
+		do {
+			// Read data from child's err pipe
+			bytes = -1;
+			if (ioctl(pipe_err[0], FIONREAD, &bytes) != -1) {
+				if (bytes > 0) {
+					bytes = read(pipe_err[0], buff, BUFFSIZE);
+				}
+			}
+			if (bytes == -1) {
+				result = ERRO;
+				goto fim;
+			}
+			// Handle data
+			if (tr_err != NULL) {
+				result = tr_err(buff, bytes, pid);
+				if (result == ERRO || result != bytes) {
+					result == ERRO;
+					goto fim;
+				}
+			}
+		} while (bytes > 0);
 fim:
-   wait(NULL);
-
-   close(pipe_out[0]);
-   close(pipe_err[0]);
-   close(pipe_in[1]);
-   if (ret_code != NULL) 
-      *ret_code = c;
-
-   return k;
-
+		waitpid(pid, &child_retcode, 0);
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		close(pipe_err[0]);
+		if (ret_code != NULL) {
+			*ret_code = child_retcode;
+		}
+		return result;
+	}
 }
 
 

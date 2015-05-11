@@ -388,9 +388,8 @@ fd_set	fdset;
 		   compara_err, timeout*reg->exetempo,
 		   timeout*reg->totaltempo, muta, argv);
    else
-       k = playbatch(&ret_cod, fileno(fp_io0), le_in, compara_out,
-		   compara_err, timeout*reg->exetempo,
-		   timeout*reg->totaltempo, muta, argv);
+//FIXME:       k = playbatch(&ret_cod, fileno(fp_io0), le_in, compara_out, compara_err, timeout*reg->exetempo, timeout*reg->totaltempo, muta, argv);
+       k = playbatch(&ret_cod, fileno(fp_io0), le_in, compara_out, compara_err, timeout*reg->exetempo, muta, argv);
 
    if (k < 0)
    {
