@@ -204,8 +204,9 @@ pty_fork2(int *ptrfdm, char *slave_name)
 	}
 }
 
+// TODO: review this function
 int
-recinput(char *arqinput, char *argv[])
+recinput(char *arqinput, char *exec_filename, char *argv[])
 {
 int	fdm, c;
 pid_t	pid;
@@ -233,7 +234,7 @@ struct winsize	size;
    else 
    if (pid == 0) 
    {		/* child */
-	if (execv(argv[0], argv) < 0)
+	if (execv(exec_filename, argv) < 0)
 	{
 	   msg("can't execv: %s");
 	   return ERRO;
