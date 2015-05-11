@@ -276,7 +276,7 @@ gravarq(FILE *fp, char buf[], int len)
 {
 	int i = fwrite(buf, 1, len, fp);
 	if (i != len) {
-		fprintf(stderr, "Error saving data to file %s.%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
+		fprintf(stderr, "Error saving data to file %s%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
 		return ERRO;
 	}
 	return OK;

@@ -172,22 +172,18 @@ pty_fork(int *ptrfdm, int pipe_out[], int pipe_err[])
 	}
 }
 
-int
-playinput(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), 
-	  int (*tr_err)(), long vtimer, long rtimer,
-	  char *prog, char *argv[])
+int playinput(int *ret_code, FILE *fp_in, int (*tr_in)(), FILE *fp_out, int (*tr_out)(), FILE *fp_err, int (*tr_err)(), long vtimer, char *prog, char *argv[])
 {
-int	i, c, bytes, ret1, k, j;
-struct  itimerval	t1;
-long	tt2, tt1;
-struct	rlimit	resource_limit;
-int	fim_le;
-int	pipe_out[2], pipe_err[2], fdm;
-pid_t pid, pipe_fork();
+	int	i, c, bytes, ret1, k, j;
+	struct  itimerval	t1;
+	long	tt2, tt1;
+	struct	rlimit	resource_limit;
+	int	fim_le;
+	int	pipe_out[2], pipe_err[2], fdm;
+	pid_t pid, pipe_fork();
 
 
-
-   pid = pty_fork(&fdm, pipe_out, pipe_err);
+	pid = pty_fork(&fdm, pipe_out, pipe_err);
 
    if (pid < 0)
       return ERRO;
@@ -204,14 +200,6 @@ pid_t pid, pipe_fork();
 	   signal(SIGVTALRM, SIG_DFL);  
 	   setitimer(ITIMER_VIRTUAL, &t1, NULL); 
 	} 
-	if (rtimer != 0)
-	{
-           tick2timeval(rtimer, &t1.it_value); 
-	   t1.it_interval.tv_sec = t1.it_value.tv_sec ;
-	   t1.it_interval.tv_usec = t1.it_value.tv_usec;
-	   signal(SIGALRM, SIG_DFL);  
-	   setitimer(ITIMER_REAL, &t1, NULL); 
-	 }  
 	 execv(prog,argv ); 
 	 return ERRO;
     }
@@ -228,7 +216,7 @@ pid_t pid, pipe_fork();
                   bytes = read(pipe_out[0],buff,BUFFSIZE);
             else  bytes = 0;
 
-           if (tr_out != NULL && (k = tr_out(buff, bytes,pid)) != bytes)
+           if (tr_out != NULL && (k = tr_out(fp_out, buff, bytes,pid)) != bytes)
 	    {
 		if (k != ERRO) k = OK;
                 goto fim;
@@ -240,7 +228,7 @@ pid_t pid, pipe_fork();
                   bytes = read(pipe_err[0],buff,BUFFSIZE);
             else  bytes = 0;
 
-            if (tr_err != NULL && (k = tr_err(buff, bytes, pid)) != bytes)
+            if (tr_err != NULL && (k = tr_err(fp_err, buff, bytes, pid)) != bytes)
 	    {
                  if (k != ERRO) k = OK;
 		 goto fim;
@@ -275,23 +263,14 @@ pid_t pid, pipe_fork();
                     }
 
               }
-                   /* sometimes, itimer doesn't work then this is a
-                        guarantee for aborting looping mutants */
-              tt2 = gettimedad() - tt1;
-              if (rtimer != 0 && tt2 > rtimer)
-              {
-                  kill(pid, SIGKILL);
-		  k = 1; c = -1;
-		  goto fim;
-               } 
-          }
+             }
           do {
 
                    if (ioctl(pipe_out[0],FIONREAD,&bytes) != -1 && bytes > 0)
                            bytes = read(pipe_out[0],buff,BUFFSIZE);
                      else  bytes = 0;
 
-                   if (tr_out != NULL && (k =tr_out(buff, bytes, pid)) != bytes)
+                   if (tr_out != NULL && (k =tr_out(fp_out, buff, bytes, pid)) != bytes)
 		   {
                         if (k != ERRO) k = OK;
 			goto fim;
@@ -304,7 +283,7 @@ pid_t pid, pipe_fork();
                            bytes = read(pipe_err[0],buff,BUFFSIZE);
                      else  bytes = 0;
 
-                   if (tr_err != NULL && (k = tr_err(buff, bytes, pid))!=bytes)
+                   if (tr_err != NULL && (k = tr_err(fp_err, buff, bytes, pid))!=bytes)
 		   {
                         if (k != ERRO) k = OK;
 			goto fim;
@@ -391,7 +370,7 @@ pipe_fork(int pipe_in[], int pipe_out[], int pipe_err[])
 /**
  * @param tr_out Handler function for data read from stdin. Its parameters are: byte buffer, size of byte buffer, pid of child process.
  */
-int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr_err)(), long vtimer, char *prog, char *argv[])
+int playbatch(int *ret_code, FILE *fp_in, int (*tr_in)(), FILE *fp_out, int (*tr_out)(), FILE *fp_err, int (*tr_err)(), long vtimer, char *prog, char *argv[])
 {
 	int pid;
 	int pipe_out[2], pipe_err[2], pipe_in[2];
@@ -440,7 +419,7 @@ int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr
 			}
 			// Handle data
 			if (tr_out != NULL) {
-				result = tr_out(buff, bytes, pid);
+				result = tr_out(fp_out, buff, bytes, pid);
 				if (result == ERRO || result != bytes) {
 					result = ERRO;
 					goto fim;
@@ -460,7 +439,7 @@ int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr
 			}
 			// Handle data
 			if (tr_err != NULL) {
-				result = tr_err(buff, bytes, pid);
+				result = tr_err(fp_err, buff, bytes, pid);
 				if (result == ERRO || result != bytes) {
 					result == ERRO;
 					goto fim;
@@ -468,7 +447,7 @@ int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr
 			}
 	
 			if ( ! fim_le) {
-				bytes = tr_in(buff, BUFFSIZE);
+				bytes = tr_in(fp_in, buff, BUFFSIZE);
 				if (bytes < 0) {
 					result = ERRO;
 						goto fim;
@@ -504,7 +483,7 @@ int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr
 			}
 			// Handle data
 			if (tr_out != NULL) {
-				result = tr_out(buff, bytes, pid);
+				result = tr_out(fp_out, buff, bytes, pid);
 				if (result == ERRO || result != bytes) {
 					result = ERRO;
 					goto fim;
@@ -527,7 +506,7 @@ int playbatch(int *ret_code, int input, int (*tr_in)(),int (*tr_out)(), int (*tr
 			}
 			// Handle data
 			if (tr_err != NULL) {
-				result = tr_err(buff, bytes, pid);
+				result = tr_err(fp_err, buff, bytes, pid);
 				if (result == ERRO || result != bytes) {
 					result == ERRO;
 					goto fim;

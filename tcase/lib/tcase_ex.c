@@ -77,50 +77,45 @@ tcase_ex_bat(char *dir, char *test, char *direx, char *exec, char *param)
 }
 
 
-FILE	*fpin, *fpout, *fperr;
-
-int le_input(char *buff, int n)
+int le_input(FILE *file, char *buff, int n)
 {
-int nread;
-
-    nread = fread( buff, 1, n, fpin);
-    if (nread <= 0)
-    {
-	if ( ferror(fpin))
-        {
-	    msg("Error reading input file");
-	    return ERRO;
+	int nread;
+	nread = fread( buff, 1, n, file);
+	if (nread <= 0) {
+		if (ferror(file)) {
+			msg("Error reading input file");
+			return ERRO;
+		}
     	}
-    	if (feof(fpin))
-	    return 0;
-    }
-    return nread;
+    	if (feof(file)) {
+		return 0;
+	} else {
+		return nread;
+	}
 }
 
-int trata_out(char *buff, int n, pid_t pid)
+int trata_out(FILE *file, char *buff, int n, pid_t pid)
 {
-int nread;
-   nread = gravarq(fpout, buff, n);
-   if (nread != OK)
-	return ERRO;
-   return n;
+	int nread;
+	nread = gravarq(file, buff, n);
+	if (nread != OK) {
+		return ERRO;
+	}
+	return n;
 }
 
-int trata_err(char *buff, int n, pid_t pid)
+int trata_err(FILE *file, char *buff, int n, pid_t pid)
 {
-int nread;
-   nread = gravarq(fperr, buff, n);
-   if (nread != OK)
-	return ERRO;
-   return n;
+	int nread;
+	nread = gravarq(file, buff, n);
+	if (nread != OK) {
+		return ERRO;
+	}
+	return n;
 }
 
-
-exec_from_ascii(direx, exec, instrum, param, dir, teste,
-		reg, timeout, use_instrum, shel, interactive)
-char	*exec, *instrum, *param, *direx, *dir, *teste, *shel;
-REG_TCASE	*reg;
-int	timeout, use_instrum, interactive;
+int
+exec_from_ascii(char *direx, char *exec, char *instrum, char *param, char *dir, char *teste, REG_TCASE *reg, int timeout, int use_instrum, char *shel, int interactive)
 {
 long    t1, tt1, t2, tt2;
 int     xret_cod, ret_cod, k;
@@ -131,6 +126,9 @@ char *p;
 	char inst_exec_fullname[PATH_MAX];
 	char test_fullname[PATH_MAX];
 	char **argv;
+	FILE *fpin, *fpout, *fperr;
+
+
 
     if (tty_save(STDIN_FILENO) == ERRO)
 	return ERRO;
@@ -138,23 +136,24 @@ char *p;
     t1 = gettimechild();
     tt1 = times(&xtms);
 
-    fpin = abrearq(dir, teste, SUFIXO_INPUT, 0);
-    if (fpin == NULL)
-	return ERRO;
-    fpout = criarq(dir, teste, SUFIXO_OUTPUT);
-    if (fpout == NULL)
-    {
-	fecharq(fpin);
-	return ERRO;
-    }
-    fperr = criarq(dir, teste, SUFIXO_ERRO);
-    if (fperr == NULL)
-    {
-	fecharq(fpin);
-	fecharq(fpout);
-	return ERRO;
-    }
-    monta_nome(exec_fullname, direx, exec, "");
+	fpin = abrearq(dir, teste, SUFIXO_INPUT, 0);
+	if (fpin == NULL) {
+		return ERRO;
+	}
+
+	fpout = criarq(dir, teste, SUFIXO_OUTPUT);
+	if (fpout == NULL) {
+		fecharq(fpin);
+		return ERRO;
+	}
+
+	fperr = criarq(dir, teste, SUFIXO_ERRO);
+	if (fperr == NULL) {
+		fecharq(fpin);
+		fecharq(fpout);
+		return ERRO;
+	}
+	monta_nome(exec_fullname, direx, exec, "");
 
 	if (use_instrum) {
         	monta_nome(inst_exec_fullname, direx, instrum, "");
@@ -167,10 +166,10 @@ char *p;
 
     if (interactive) {
 /*	aloca_master(); */
-        k = playinput(&ret_cod, fileno(fpin), le_input, trata_out, trata_err, timeout*100, timeout*100, p, argv);
+        k = playinput(&ret_cod, fpin, le_input, fpout, trata_out, fperr, trata_err, timeout*100, p, argv);
 /*	libera_master(); */
     } else {
-	k = playbatch(&ret_cod, fileno(fpin), le_input, trata_out, trata_err, timeout*100, p, argv);
+	k = playbatch(&ret_cod, fpin, le_input, fpout, trata_out, fperr, trata_err, timeout*100, p, argv);
 	}
 	free_array_str(argv);
 
