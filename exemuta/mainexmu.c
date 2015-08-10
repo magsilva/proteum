@@ -285,7 +285,7 @@ char	*argv[];
 	Le parametros da opcao -select do programa
 
 ***************************************************************************/
-SelectMuta(argc, argv)
+SelectMuta(argc, argv)  // TODO: revisar (-exec funciona, mas -select não)
 int	argc;
 char	*argv[];
 {
