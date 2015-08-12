@@ -1,43 +1,36 @@
-/* Copyright (C) 2012 -- Marcio Eduardo Delamaro and Jose Carlos Maldonado
+/*
+Copyright (C) 2012 -- Marcio Eduardo Delamaro and Jose Carlos Maldonado
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
  
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
  
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- 
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>
- 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
 
-/*@MODULE###################################################################
-				D I S C O . C
-	This module implements functions for access of disk.
+/*@MODULE
+ * This module implements functions for access of disk.
+ *
+ * @author Marcio Eduardo Delamaro
+ * @created 02-09-1994
+ */
 
-Include Files:
-		"gerais.h"
-		<sys/file.h>
-
-Author: Marcio Eduardo Delamaro
-Date: 02-09-94
-
-Alteration	Responsible	Motive
------------------------------------------
-23-11-94 	Mirian		Documentation
-
-###########################################################################*/
-
-#include "gerais.h" /* estructures and definitions used in gerais.c */
-#include <sys/file.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/file.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "fileio.h"
+#include "string.h"
 
 static	ARQUIVO	tabarq[MAX_ARQ];  /* table of open files */	
 
@@ -65,12 +58,12 @@ insarq(char *d, char *s, char *e, FILE *fp)
 			strcpy(tabarq[i].nome, normaliza(s)); /* copy the file's name to the field of the table */
 			strcpy(tabarq[i].ext, normaliza(e));  /* copy the file name extension to the field of the table */
 			strcpy(tabarq[i].dir, normaliza(d));
-			return OK;
+			return true;
 		}
 	}
 
 	fprintf(stderr, "No free slot to insert the file %s", fullname);
-	return ERRO;
+	return false;
 }
 
 
@@ -86,10 +79,10 @@ delarq(FILE *fp)
 	for (i = 0; i < MAX_ARQ; i++) { /* look for the file pointer in the table of open files */
 		if (tabarq[i].fp == fp) {
 			tabarq[i].fp = NULL; /* free the location of table */
-			return OK;
+			return true;
 		}
 	}
-	return ERRO;
+	return false;
 }
 
 
@@ -172,7 +165,7 @@ abrearq(char *d, char *s, char *e, int tipo)
 	}
 
 	/* if the file was opened, insert it in  the table of open files */
-	if (insarq(d, s, e, fp) == ERRO) {
+	if (insarq(d, s, e, fp) == false) {
 		fclose(fp);
 		return NULL;
 	}
@@ -194,11 +187,11 @@ int fecharq(FILE *fp)
 		if (tabarq[i].fp == fp) {
 			fclose(fp);
 			delarq(fp);
-			return OK;
+			return true;
 		}
 	}
 
-	return ERRO;
+	return false;
 }
 
 
@@ -233,7 +226,7 @@ criarq(char *directory, char *filename, char *extension)
 		return NULL;
 	}
 
-	if (insarq(directory, filename, extension, fp) == ERRO) {
+	if (insarq(directory, filename, extension, fp) == false) {
 		fclose(fp);
 		return NULL;
  	}
@@ -250,7 +243,7 @@ delearq(char d[], char s[], char e[])
 {
 	char fullname[PATH_MAX];
 	monta_nome(fullname, d, s, e);
-	unlink(fullname);
+	return unlink(fullname);
 }
 
 
@@ -263,9 +256,9 @@ learq(FILE *fp, char buf[], int len)
 	int i = fread(buf, 1, len, fp);
 	if (i != len) {
 		fprintf(stderr, "Error reading data to file %s.%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
-		return ERRO;
+		return false;
 	}
-	return OK;
+	return true;
 }
 
 /**
@@ -277,9 +270,9 @@ gravarq(FILE *fp, char buf[], int len)
 	int i = fwrite(buf, 1, len, fp);
 	if (i != len) {
 		fprintf(stderr, "Error saving data to file %s%s (%d from %d bytes)", nomearq(fp), extarq(fp), i, len);
-		return ERRO;
+		return false;
 	}
-	return OK;
+	return true;
 }
 
 /**
@@ -290,9 +283,9 @@ posiciona(FILE *fp, long offset)
 {
 	if (fseek(fp, offset, 0) < 0) {
 		fprintf(stderr, "Error seeking to the position %ld of %s.%s", offset, nomearq(fp), extarq(fp));
-		return ERRO;
+		return false;
 	}
-	return OK;
+	return true;
 }
 
 /**
@@ -303,9 +296,9 @@ posifim(FILE *fp)
 {
 	if (fseek(fp, 0L, 2) < 0) {
 		fprintf(stderr, "Error seeking to the end of %s.%s", nomearq(fp), extarq(fp));
-		return ERRO;
+		return false;
 	}
-	return OK;
+	return true;
 }
 
 
@@ -348,3 +341,6 @@ int maxfile()
 	}
 	return (int) rlp.rlim_cur;
 }
+
+
+

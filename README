@@ -1,11 +1,22 @@
-How to compile Proteum
------------------------
+Requirements
+------------
+* cmake
+* cmocka
 
-In the base directory there is a primitive makefile which will do the job.
-Improvements to the compilation and installation process are wellcome.
 
-Currently Proteum only compiles on linux, as far as I know. I didn't try on other
-OS.
+
+How to compile
+--------------
+
+cd build
+cmake ..
+
+
+
+
+How to test
+-----------
+ctest
 
 
 

@@ -58,9 +58,13 @@ ALL =  li pteste tcase muta exemuta report opmuta util misc btree checkequiv ins
 all: $(ALL)
 	echo DONE
 
-lib:	disco  gerais  globais  ttymodes
-	$(LD) $(LFLAGS) $(OBJ)/disco.o $(OBJ)/gerais.o \
-	$(OBJ)/globais.o  $(OBJ)/ttymodes.o -o $(OBJ)/libgerais.o
+
+%.o: %.c
+	$(CC) -std=c99 -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+
+lib: $(LIB)/set.o disco gerais globais ttymodes
+	$(LD) $(LFLAGS) $(OBJ)/disco.o $(OBJ)/gerais.o $(OBJ)/globais.o  $(OBJ)/ttymodes.o -o $(OBJ)/libgerais.o
 
 disco:  $(OBJ)/disco.o 
 
@@ -68,6 +72,7 @@ disco:  $(OBJ)/disco.o
 $(OBJ)/disco.o: $(LIB)/disco.c $(LIB)/gerais.h
 	$(CC) $(CFLAGS) $(LIB)/disco.c -o $(OBJ)/disco.o
  
+
 gerais:  $(OBJ)/gerais.o
 	# Compiling gerais.c	
 

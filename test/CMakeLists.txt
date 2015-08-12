@@ -1,0 +1,6 @@
+include_directories ("${PROJECT_SOURCE_DIR}/src")
+add_executable(test_set test_set.c)
+add_dependencies(test_set test_set)
+add_test(test_set test_set)
+add_test(test_state_valgrind valgrind --error-exitcode=1 --read-var-info=yes --leak-check=full --show-leak-kinds=all ./test_set)
+target_link_libraries(test_set util cmocka)

@@ -28,9 +28,11 @@ Data: 02-09-94
 Documentacao: 24-10-94 (Mirian)
 *************************************************************************/
 
-#include <limits.h>
+#include <linux/limits.h>
+#include <stdbool.h>
+#include <stdio.h>
 
-#define		MAX_ARQ		20	/*numero maximo de arquiovos */
+#define MAX_ARQ 20 /*numero maximo de arquivos */
 
 /**
  * Structure that holds information regarding opened files.

@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0)
+project(ProteumIM)
+enable_testing()
+set(CMAKE_C_FLAGS "-Wall -Werror -Wpedantic -std=c11 -D_POSIX_C_SOURCE -D_DEFAULT_SOURCE")
+add_subdirectory(src)
+add_subdirectory(test)
