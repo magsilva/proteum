@@ -30,11 +30,6 @@ Este modulo cuida da execucao de cada mutante
 #include	<sys/times.h>
 #include	<sys/wait.h>
 #include	<sys/ioctl.h>
-
-#ifndef		LINUX
-#include	<sys/filio.h>
-#endif
-
 #include 	<signal.h>
 #include	<fcntl.h>
 #include 	<sys/stat.h>
