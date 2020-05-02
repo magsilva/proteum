@@ -20,6 +20,8 @@
 #ifndef		__BTREE__
 #define		__BTREE__
 
+#include <stdio.h>
+
 #define		BTREE_NULL	(long) 0
 
 #define		MAXKEYS		50
@@ -47,7 +49,7 @@
 
 /*------------------- Macros --------------------------*/
 #define		BTREE_nkeys(bt)		(bt->totkeys)
-#define         nth_key(bt,p,n)         (((void*)(p+1))+(bt->keysize)*(n))
+#define         nth_key(bt,p,n)         (((PAGE_ADDRESS *)(p + 1)) + ((bt->keysize)*n))
 
 
 extern int btree_errno;

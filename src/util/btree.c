@@ -19,11 +19,12 @@
 
 
 #include <stdlib.h>
-#include <lib/gerais.h>
- 
+#include <string.h>
+
 #include "btree.h"
 #include "btlib.h"
- 
+
+
 int btree_errno = 0;
 
 long	bufpage[PAGESIZE/sizeof(long)];
@@ -154,7 +155,6 @@ BTREE_open(char *dfile, char *ifile, int keysize, int (*cmp_key)(), void (* prin
 {
 	BTREE   *p;
 	unsigned int     k;
-	PAGE_ZERO *pz;
 
 	p = (BTREE *) malloc(sizeof(BTREE));
 	if (p == NULL) {
@@ -220,7 +220,7 @@ l1:
 
 int
 BTREE_insert_key(BTREE *bt, KEY *key, long address, int size) {
-	void	*root, *new_root;
+	void	 *new_root;
 	KEY	*hkey;
 	ITEM	u;
 	PAGE_ADDRESS	*p;
@@ -380,7 +380,6 @@ int	i, k;
 int     BTREE_get_nth_key(BTREE *bt, int n, KEY *key, long *add, int *size)
 {
 ITEM u;
-int     k;
 
     if (bt->totkeys < n)
     {
@@ -402,7 +401,7 @@ int     k;
 int     BTREE_get_nth_data(BTREE *bt, int n, KEY *key, void *reg, int *size)
 {
 long    l;
-int     i, k;
+int     k;
 
    if (BTREE_get_nth_key(bt, n, key, &l, &k) < 0)
 	return -1;

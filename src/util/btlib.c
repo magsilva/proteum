@@ -18,10 +18,10 @@
 */
 
 
-#include <lib/gerais.h>
-
 #include "btlib.h"
- 
+#include <stdlib.h>
+#include <string.h>
+
 long bufpage[PAGESIZE/sizeof(long)];
 
 int
@@ -45,7 +45,6 @@ long    l;
 
 int	write_page(BTREE *bt, void *page)
 {
-int	i;
 long	l;
 
    l = address_of(bt, page);
@@ -435,7 +434,7 @@ ITEM	v;
 int     search_key(BTREE *bt, long page, KEY *key, ITEM *u)
 {
 PAGE_ADDRESS *p;
-KEY *pk, *pkk;
+KEY *pkk;
 long    nx;
 int	l, r, k;
 
@@ -449,8 +448,6 @@ int	l, r, k;
    }
 
    p = (PAGE_ADDRESS *) get_page(bt, page);
-   pk = (KEY *) (p + 1);
-
    l = 0; r = p->nkeys-1;
    do {
         k = (l + r) / 2;
@@ -482,7 +479,7 @@ int	l, r, k;
 int     delete_key(BTREE *bt, long page, KEY *key)
 {
 PAGE_ADDRESS *p;
-KEY *pk, *pkk;
+KEY  *pkk;
 long    nx;
 int     l, r, k;
 
@@ -493,8 +490,6 @@ int     l, r, k;
    }
 
    p = (PAGE_ADDRESS *) get_page(bt, page);
-   pk = (KEY *) (p + 1);
-
    l = 0; r = p->nkeys-1;
    do {
         k = (l + r) / 2;
@@ -531,7 +526,7 @@ int     l, r, k;
 int     get_nth(BTREE *bt, long page, int n, KEY *key, ITEM *u)
 {
 PAGE_ADDRESS *p;
-int     i, cont;
+int     i;
 
    if (page == BTREE_NULL)
    {
@@ -570,7 +565,7 @@ int     i, cont;
 int     seq_key(BTREE *bt, long page, int m, KEY *key, int *t)
 {
 PAGE_ADDRESS *p;
-KEY *pk, *pkk;
+KEY *pkk;
 long    nx;
 int     l, r, k;
 
@@ -581,8 +576,6 @@ int     l, r, k;
    }
 
    p = (PAGE_ADDRESS *) get_page(bt, page);
-   pk = (KEY *) (p + 1);
-
    l = 0; r = p->nkeys-1;
    do {
         k = (l + r) / 2;

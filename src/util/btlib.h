@@ -21,18 +21,22 @@
 #define         __BTLIB__
 
 #include "btree.h"
+#include <stdio.h>
 
 extern long bufpage[];
 
 int     find_page0(FILE *);
 int	write_page(BTREE *, void *);
 int     write_page_zero(BTREE *);
+int     get_page_zero(BTREE *);
 void	*get_root(BTREE *);
+int     get_nth(BTREE *, long, int, KEY *, ITEM *);
 void    *new_page(BTREE *);
 long	new_reg(BTREE *, int);
 int     insert_key(BTREE *, long , KEY *, ITEM *, KEY **);
 long	address_of(BTREE *, void *);
 int	delete_key(BTREE *, long, KEY *); 
+int     search_key(BTREE *, long, KEY *, ITEM *);
 int	seq_key(BTREE *, long, int , KEY *, int *);
 
 void    reloca_pool(BTREE *, long);
