@@ -132,31 +132,6 @@ char	*p;
 
 
 
-/**************************************************************************
-ITOA:
-	Transforma inteiro em string.
-
-**************************************************************************/
-char	*itoa(x)
-int	x;
-{
-static char buf[10];
-
-   sprintf(buf, "%d", x);
-   return buf;
-}
-
-
-char	*ltoa(x)
-long	x;
-{
-static char buf[10];
-
-   sprintf(buf, "%ld", x);
-   return buf;
-}
-
-
 
 /**************************************************************************
 TEM_DIR:

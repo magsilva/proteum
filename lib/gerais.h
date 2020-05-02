@@ -82,6 +82,13 @@ FILE	*popen();	/* define popen if stdio.h doesn't */
 
 #define		STR_DIR_HOME	"PROTEUMIMHOME"
 
+/**
+ * Maximum length of an integer number converted to a string.
+ * 2^64 = 18,446,744,073,709,551,616 (20 numbers plus 1 to NULL terminate the string)
+ */
+#define MAX_NUMBER_STRING_LENGTH 21
+
+
 /*			G E R A I S.H
 
 /*-------------------- Constantes utilizadas por gerais.c ---------*/
@@ -92,6 +99,8 @@ FILE	*popen();	/* define popen if stdio.h doesn't */
 #define		OFFSET0		64	/* tamanho do cabecalho de identificacao colocado nos arquivos de trabalho do proteum */
 
 #define		MAXSET		512
+
+
 
 typedef	struct {
 		short int	n;

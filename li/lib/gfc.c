@@ -88,44 +88,39 @@ int i;
 
 }
 
-/*
-Esta funcao remove os nós que são vaziios do grafo
-*/
-int remove_empty()
-{
-int i, j, k;
-OSET list_empty;
-char *s, *p;
+/**
+ * Remove empty nodes from the graph.
+ */
+int remove_empty() {
+    OSET list_empty;
+
+    // Collect all empty nodes
     set_new(&list_empty);
-    // collect all the empty nodes
-    for (i = 0; i < nnodes; i++)
-   {
-       if (gfc_is_empty(i) == EMPTY )
-           set_add(&list_empty, (char *) itoa(i+1));
-   }
+    for (int i = 0; i < nnodes; i++) {
+        if (gfc_is_empty(i) == EMPTY) {
+            char[MAX_NUMBER_STRING_LENGTH] data;
+            snprintf(data, MAX_NUMBER_STRING_LENGTH, "%d", i + 1);
+            set_add(&list_empty, data);
+        }
+    }
 
-
-    // acha os nos que apontam para os vazios
-    for (i = 0; i < nnodes; i++)
-   {
-        for (p = set_get(&(tabnodes[i].next), j = 0); p != NULL;
-             p = set_get(&(tabnodes[i].next), ++j) )
-        {
-            if ( set_inn(&list_empty, p) >= 0 )
-            {
-                s = find_no_empty(p, &list_empty);
-                gfc_del_aresta(i, atoi(p)-1);
-                if (s != NULL)
-                { // substitui p por s
-                    gfc_add_aresta(i, atoi(s)-1);
+    /* Find nodes that are linked to empty nodes and remove that edge */
+    for (int i = 0; i < nnodes; i++) {
+	int j = 0;
+        char * p = set_get(&(tabnodes[i].next), j);
+	while (p != NULL) {
+	    if (set_inn(&list_empty, p) >= 0) {
+                char * s = find_no_empty(p, &list_empty);
+                gfc_del_aresta(i, atoi(p) - 1);
+                if (s != NULL) {
+                    gfc_add_aresta(i, atoi(s) - 1);
                 }
                 j--;
             }
-        }
-   }
-
-
-
+	    j++;
+	    p = set_get(&(tabnodes[i].next), j);
+	}
+    }
 }
 
 
@@ -237,44 +232,65 @@ int gfc_curnode()
 }
 
 
+/**
+ * Add edge between two nodes.
+ */
 int gfc_add_aresta(int node1, int node2)
 {
-char *p;
-   p = (char *) itoa(node2+1);
-   if (  set_inn(&(tabnodes[node1].next), p) < 0)
-   {	
-   	set_add(&(tabnodes[node1].next), p);
-   }
-   tabnodes[node2].flg.chega = TRUE;
+    int result;
+    char[MAX_NUMBER_STRING_LENGTH] data;
+    snprintf(data, MAX_NUMBER_STRING_LENGTH, "%d", node2 + 1);
+ 
+    if (set_inn(&(tabnodes[node1].next), data) < 0) {	
+    	set_add(&(tabnodes[node1].next), data);
+	result = 1;
+    } else {
+	result = 0;
+    }
+    tabnodes[node2].flg.chega = TRUE;
+
+    return result;
 }
 
+/**
+ * Remove edge between two nodes.
+ */
 int gfc_del_aresta(int node1, int node2)
 {
-int i;
-char *p;
+    int i;
+    char[MAX_NUMBER_STRING_LENGTH] data;
 
-   p = (char *) itoa(node2+1);
-   i = set_inn(&(tabnodes[node1].next),p);
-   if (i < 0)
+    snprintf(data, MAX_NUMBER_STRING_LENGTH, "%d", node2 + 1);
+    i = set_inn(&(tabnodes[node1].next), data);
+    if (i < 0) {
 	return -1;
-   set_del(&(tabnodes[node1].next), i);
-   return 0;
+    }
+    set_del(&(tabnodes[node1].next), i);
+
+    return 0;
 }
 
+/**
+ * Remove edges from a node.
+ */
 void gfc_remove_arestas(int node)
 {
-   set_free(&(tabnodes[node].next));
-   set_new(&(tabnodes[node].next));
+    set_free(&(tabnodes[node].next));
+    set_new(&(tabnodes[node].next));
 }
 
+/**
+ * Check if there is a edge between two nodes.
+ */
 int gfc_has_aresta(int node1, int node2)
 {
-int i;
-char *p;
+    int i;
+    char[MAX_NUMBER_STRING_LENGTH] data;
 
-   p = (char *) itoa(node2+1);
-   i = set_inn(&(tabnodes[node1].next),p);
-   return (i >= 0);
+    snprintf(data, MAX_NUMBER_STRING_LENGTH, "%d", node2 + 1);
+    i = set_inn(&(tabnodes[node1].next), data);
+
+    return (i >= 0);
 }
 
 
